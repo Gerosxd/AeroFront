@@ -27,7 +27,7 @@ Asegúrese de situar la terminal en el directorio del frontend dentro del reposi
 ```bash
 cd frontend
 
-### 2. Instalación de Dependencias
+2. Instalación de Dependencias
 Ejecute el siguiente comando para descargar e instalar las librerías necesarias:
 npm install
 
@@ -44,3 +44,4 @@ src/assets: Recursos estáticos (imágenes, fuentes).
 
 Integración con Backend
 Actualmente, el frontend utiliza datos simulados (mock data) para la interfaz de usuario. La integración con los endpoints del Backend Java se realizará a través de servicios configurados con Axios en futuras iteraciones.
+
