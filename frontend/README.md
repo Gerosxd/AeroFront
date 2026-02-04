@@ -24,6 +24,8 @@ Siga estos pasos para levantar el entorno de desarrollo local.
 
 ### 1. Ubicación del Proyecto
 Asegúrese de situar la terminal en el directorio del frontend dentro del repositorio.
+```bash
+cd frontend
 
 ### 2. Instalación de Dependencias
 Ejecute el siguiente comando para descargar e instalar las librerías necesarias:
@@ -34,7 +36,7 @@ Para iniciar la aplicación en modo desarrollo:
 npm run dev
 Una vez iniciado, la aplicación estará accesible en: http://localhost:5173/
 
-Estructura del Proyecto:
+4. Estructura del Proyecto:
 src/components: Componentes reutilizables de UI (Botones, Inputs, Navbars).
 src/views: Páginas completas de la aplicación (Login, Dashboard, Almacén).
 src/router: Configuración de navegación y rutas.
