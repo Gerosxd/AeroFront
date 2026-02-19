@@ -30,25 +30,28 @@ Sigue estos pasos para levantar el entorno de desarrollo visual (Fase 1).
 ```bash
 git clone <URL_DEL_NUEVO_REPOSITORIO_FRONTEND>
 cd frontend
+```
 ## Instalar dependencias
 Este comando descargará todas las librerías necesarias respetando el package-lock.json.
 
-Bash
+```bash
 npm install
-Variables de Entorno
+```
+## Variables de Entorno
 Crea un archivo .env en la raíz del frontend basándote en un posible .env.example:
-
-Properties
+```Properties
 VITE_API_URL=http://localhost:8080/api
+```
 Levantar el servidor
-Bash
+```bash
 npm run dev
+```
 Abre tu navegador en http://localhost:5173.
 
-📂 3. Estructura del Proyecto (Fase 1)
+## 📂 3. Estructura del Proyecto (Fase 1)
 Actualmente, el proyecto está estructurado de la siguiente manera para la visualización de maquetas:
 
-Plaintext
+```Plaintext
 src/
 ├── assets/          # Recursos estáticos (imágenes, css global)
 ├── components/      # Componentes UI reutilizables (ej. TopNavbar.vue)
@@ -61,31 +64,25 @@ src/
     ├── ArticulosView.vue
     ├── ProveedoresView.vue
     └── IngenieriaView.vue
-⚙️ 4. (Opcional) Ejecución del Backend Local
+```
+## ⚙️ 4. (Opcional) Ejecución del Backend Local
 Para probar el sistema completo con datos reales, necesitarás correr el repositorio del Backend (Java 17, Spring Boot 3, MySQL 8).
 
 Clona el repositorio del backend.
 
 Abre MySQL Workbench y ejecuta:
 
-SQL
+```SQL
 CREATE DATABASE taller_aeronautico_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
 Configura tus credenciales en application.properties:
 
-Properties
+```Properties
 spring.datasource.url=jdbc:mysql://localhost:3306/taller_aeronautico_db
 spring.datasource.username=root
 spring.datasource.password=TU_CONTRASEÑA
+```
 Corre la aplicación desde IntelliJ (TallerAeronauticoApplication.java).
 
 
-### Paso 2: Sube solo este archivo con un mensaje nuevo
 
-Guarda el archivo en tu VS Code. Ahora abre tu terminal (asegúrate de estar en la carpeta `frontend`) y ejecuta estos comandos uno por uno. 
-
-Fíjate cómo en el primer comando le decimos explícitamente a Git que **solo agarre el README**, y en el segundo le ponemos un título descriptivo diferente:
-
-```bash
-git add README.md
-git commit -m "Docs: Corrección del README con las instrucciones completas"
-git push origin main
