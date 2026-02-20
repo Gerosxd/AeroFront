@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from "vue-router";
 import { Plane, User, Lock, Loader2 } from 'lucide-vue-next';
+import { login, saveSession } from "@/services/auth.service";
+import axios from "axios";
 
 // --- LOGICA DE LOGIN ---
+const router = useRouter();
+
 const username = ref('');
 const password = ref('');
 const rememberMe = ref(false);
@@ -14,12 +19,11 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
-    console.log("Conectando a Java con:", { user: username.value, pass: password.value });
-    // Simulacion de espera
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    alert("¡Login exitoso! (Simulación)");
-  } catch (error) {
-    errorMessage.value = 'Error de conexión.';
+    const res = await login(username.value, password.value);
+    saveSession(res);
+    // router.push('/dashboard'); (cuando lo tengas)
+  } catch (e: any) {
+    errorMessage.value = e?.response?.data?.message ?? 'Credenciales inválidas';
   } finally {
     isLoading.value = false;
   }
