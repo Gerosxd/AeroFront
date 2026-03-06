@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Plus, Search, Filter, Mail, Phone, MapPin } from 'lucide-vue-next';
+import ProveedoresForm from './ProveedoresForm.vue';
 
 // 1. Estructura del Proveedor
 interface Proveedor {
@@ -82,6 +83,22 @@ const getCategoryStyle = (categoria: string) => {
     default: return 'bg-gray-100 text-gray-700';
   }
 };
+
+const showModal = ref(false);
+
+// Lógica para el ID autoincremental PROV-XXX
+const getNextId = () => {
+  const maxId = proveedores.value.reduce((max, p) => {
+    const num = parseInt(p.id.split('-')[1]);
+    return num > max ? num : max;
+  }, 0);
+  return `PROV-${(maxId + 1).toString().padStart(3, '0')}`;
+};
+
+const handleSave = (nuevo: Proveedor) => {
+  proveedores.value.push(nuevo);
+  showModal.value = false;
+};
 </script>
 
 <template>
@@ -91,7 +108,9 @@ const getCategoryStyle = (categoria: string) => {
         <h1 class="text-2xl font-bold text-gray-900">Proveedores</h1>
         <p class="text-gray-500 text-sm">Gestiona el catálogo de proveedores de partes y servicios aeronáuticos.</p>
       </div>
-      <button class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm">
+      <button
+          @click="showModal = true"
+          class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm">
         <Plus class="w-4 h-4" />
         Nuevo Proveedor
       </button>
@@ -194,5 +213,11 @@ const getCategoryStyle = (categoria: string) => {
       </div>
     </div>
 
+    <ProveedoresForm
+        v-if="showModal"
+        :nextId="getNextId()"
+        @save="handleSave"
+        @close="showModal = false"
+    />
   </div>
 </template>

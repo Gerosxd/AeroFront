@@ -1,4 +1,4 @@
-# ✈️ AeroMaintain - Frontend (MRO & WMS)
+n# ✈️ AeroMaintain - Frontend (MRO & WMS)
 
 Repositorio exclusivo del Frontend para el Sistema de Gestión de Taller Aeronáutico. Este proyecto maneja la interfaz de usuario para los módulos de Ingeniería (MRO) y Almacén (WMS).
 
