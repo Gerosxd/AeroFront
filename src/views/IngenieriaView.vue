@@ -123,7 +123,6 @@ const activeTab = ref('todas');
 const tabs = [
   { id: 'todas', label: 'Todas las OT' },
   { id: 'crear', label: 'Crear OT' },
-  { id: 'salidas', label: 'Salidas de OT' },
   { id: 'aeronaves', label: 'Aeronaves' },
   { id: 'clientes', label: 'Clientes' },
   { id: 'modelos', label: 'Modelos' },
@@ -292,41 +291,6 @@ const tabs = [
           </button>
         </div>
       </form>
-    </div>
-
-    <div v-else-if="activeTab === 'salidas'" class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in">
-      <table class="w-full text-left border-collapse min-w-max">
-        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
-          <tr>
-            <th class="px-6 py-4">No. OT</th>
-            <th class="px-6 py-4">Fecha Salida</th>
-            <th class="px-6 py-4">Aeronave</th>
-            <th class="px-6 py-4">Cliente</th>
-            <th class="px-6 py-4">Tipo Trabajo</th>
-            <th class="px-6 py-4">Responsable</th>
-            <th class="px-6 py-4">Duración (días)</th>
-            <th class="px-6 py-4">Estado</th>
-            <th class="px-6 py-4 text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="ot in ordenes" :key="'salida-'+ot.id" class="hover:bg-gray-50">
-            <td class="px-6 py-4 font-semibold text-gray-900 text-sm">{{ ot.id }}</td>
-            <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.fechaSalida }}</td>
-            <td class="px-6 py-4 font-mono text-xs text-gray-900">{{ ot.aeronave }}</td>
-            <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.cliente }}</td>
-            <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.tipo }}</td>
-            <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.responsable }}</td>
-            <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.duracion || '-' }}</td>
-            <td class="px-6 py-4">
-              <span :class="`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ot.estado)}`">{{ ot.estado }}</span>
-            </td>
-            <td class="px-6 py-4 text-right">
-              <button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Ver</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
 
     <div v-else-if="activeTab === 'aeronaves'" class="space-y-4 animate-fade-in">

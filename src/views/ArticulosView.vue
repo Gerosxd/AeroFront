@@ -75,6 +75,23 @@ const entradas = ref<Entrada[]>([
   },
 ]);
 
+// --- SECCIÓN 3: SALIDAS DE OT (Movido de Ingeniería) ---
+interface Salida {
+  id: string;
+  fechaSalida: string;
+  aeronave: string;
+  cliente: string;
+  tipo: string;
+  responsable: string;
+  duracion: number;
+  estado: string;
+}
+
+const salidas = ref<Salida[]>([
+  { id: 'OT-2026-001', fechaSalida: '20/01/2026', aeronave: 'XA-ABC', cliente: 'AeroMéxico', tipo: 'Preventivo', responsable: 'Ing. Juan Pérez', duracion: 15, estado: 'Completado' },
+  { id: 'OT-2026-002', fechaSalida: '11/01/2026', aeronave: 'XA-DEF', cliente: 'Volaris', tipo: 'Correctivo', responsable: 'Ing. María López', duracion: 3, estado: 'En Progreso' },
+]);
+
 // --- HELPERS VISUALES ---
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
@@ -96,13 +113,22 @@ const getEntryStatusStyle = (estado: string) => {
   }
 };
 
+const getStatusStyle = (estado: string) => {
+  switch (estado) {
+    case 'Completado': return 'bg-green-100 text-green-700';
+    case 'En Progreso': return 'bg-blue-100 text-blue-700';
+    case 'Pendiente': return 'bg-yellow-100 text-yellow-800';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+};
+
 // Control de Pestañas
 const activeTab = ref('listado');
 </script>
 
 <template>
   <div class="space-y-6">
-    
+
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Artículos</h1>
@@ -115,18 +141,25 @@ const activeTab = ref('listado');
     </div>
 
     <div class="border-b border-gray-200">
-      <nav class="flex gap-6">
-        <button 
+      <nav>
+        <button
           @click="activeTab = 'listado'"
           :class="[activeTab === 'listado' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-3 px-1 border-b-2 text-sm transition-colors']"
         >
           Listado General
         </button>
-        <button 
+        <button
           @click="activeTab = 'entradas'"
           :class="[activeTab === 'entradas' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-3 px-1 border-b-2 text-sm transition-colors']"
         >
           Entradas de Artículos
+        </button>
+
+        <button
+            @click="activeTab = 'salidas'"
+            :class="[activeTab === 'salidas' ? 'border-blue-600 text-blue-600 font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-3 px-1 border-b-2 text-sm transition-colors']"
+        >
+          Salidas
         </button>
       </nav>
     </div>
@@ -187,8 +220,8 @@ const activeTab = ref('listado');
       </div>
     </div>
 
-    <div v-else class="space-y-6">
-      
+    <div v-else-if="activeTab === 'entradas'" class="space-y-6">
+
       <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-3">
         <div class="relative flex-1">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -200,13 +233,13 @@ const activeTab = ref('listado');
       </div>
 
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
-        
+
         <div class="p-4 border-b border-gray-200 bg-gray-50/50 min-w-max">
           <h3 class="font-semibold text-gray-900 flex items-center gap-2">
             <ArrowDownCircle class="w-4 h-4 text-gray-500" /> Registro de Entradas
           </h3>
         </div>
-        
+
         <div class="min-w-max">
           <table class="w-full text-left border-collapse">
             <thead class="bg-white text-gray-500 text-xs uppercase font-semibold border-b border-gray-100">
@@ -237,7 +270,6 @@ const activeTab = ref('listado');
                 <td class="px-6 py-4 text-sm text-gray-600">{{ entrada.almacen }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500 font-mono text-xs">{{ entrada.ubicacion }}</td>
                 <td class="px-6 py-4 text-sm text-gray-600 max-w-[120px]">{{ entrada.recibidoPor }}</td>
-                
                 <td class="px-6 py-4">
                   <span :class="`px-2.5 py-1 rounded-full text-xs font-semibold ${getEntryStatusStyle(entrada.estado)}`">
                     {{ entrada.estado }}
@@ -248,6 +280,52 @@ const activeTab = ref('listado');
                   <button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Ver</button>
                 </td>
               </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="activeTab === 'salidas'" class="space-y-6">
+
+      <div v-if="activeTab === 'salidas'" class="space-y-6">
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+          <div class="p-4 border-b border-gray-200 bg-gray-50/50 min-w-max">
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+              <FileText class="w-4 h-4 text-gray-500" /> Historial de Salidas
+            </h3>
+          </div>
+
+          <table class="w-full text-left border-collapse min-w-max">
+            <thead class="bg-white text-gray-500 text-xs uppercase font-semibold border-b">
+            <tr>
+              <th class="px-6 py-4">No. OT</th>
+              <th class="px-6 py-4">Fecha Salida</th>
+              <th class="px-6 py-4">Aeronave</th>
+              <th class="px-6 py-4">Cliente</th>
+              <th class="px-6 py-4">Tipo Trabajo</th>
+              <th class="px-6 py-4">Duración (días)</th>
+              <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            <tr v-for="ot in salidas" :key="ot.id" class="hover:bg-gray-50/80">
+              <td class="px-6 py-4 font-semibold text-gray-900 text-sm">{{ ot.id }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ ot.fechaSalida }}</td>
+              <td class="px-6 py-4 font-mono text-xs text-gray-900">{{ ot.aeronave }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ ot.cliente }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600">{{ ot.tipo }}</td>
+              <td class="px-6 py-4 text-sm text-gray-600 text-center">{{ ot.duracion }}</td>
+              <td class="px-6 py-4">
+                <span :class="`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusStyle(ot.estado)}`">
+                  {{ ot.estado }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Ver</button>
+              </td>
+            </tr>
             </tbody>
           </table>
         </div>
