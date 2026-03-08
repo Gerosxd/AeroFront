@@ -1,29 +1,23 @@
 <script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
 import { X, Plus, Trash2, Save } from 'lucide-vue-next'
+import type { CatalogoItem, Catalogos } from '../services/catalogo.service'
+import type { PayloadNuevoArticuloBackend } from '../services/articulo.service'
 
-type Condicion = 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
+type CondicionTexto = 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
 
-interface Catalogos {
-  categorias: string[]
-  unidades: string[]
-  almacenes: string[]
-  proveedores: string[]
-  condiciones: string[]
-}
-
-export interface PayloadNuevoArticulo {
+interface ArticuloPreview {
   codigo: string
   noSerie: string
   descripcion: string
-  categoria: string
-  unidadMedida: string
+  categoria: number
+  unidadMedida: number
   stock: number
-  almacen: string
+  almacen: number
   ubicacion: string
-  proveedor: string
-  precio: number
-  condicion: Condicion
+  proveedor: number
+  precioCompra: number
+  condicion: number
 }
 
 const props = defineProps<{
@@ -33,30 +27,59 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'submit', payload: PayloadNuevoArticulo[]): void
+  (e: 'submit', payload: PayloadNuevoArticuloBackend[]): void
 }>()
 
-const crearArticuloVacio = (): PayloadNuevoArticulo => ({
+const crearArticuloVacio = (): ArticuloPreview => ({
   codigo: '',
   noSerie: '',
   descripcion: '',
-  categoria: '',
-  unidadMedida: '',
+  categoria: 0,
+  unidadMedida: 0,
   stock: 0,
-  almacen: '',
+  almacen: 0,
   ubicacion: '',
-  proveedor: '',
-  precio: 0,
-  condicion: 'Nuevo',
+  proveedor: 0,
+  precioCompra: 0,
+  condicion: 0,
 })
 
-const form = reactive<PayloadNuevoArticulo>(crearArticuloVacio())
-const articulosAgregados = reactive<PayloadNuevoArticulo[]>([])
+const form = reactive<ArticuloPreview>(crearArticuloVacio())
+const articulosAgregados = reactive<ArticuloPreview[]>([])
 
 const totalArticulos = computed(() => articulosAgregados.length)
 
+const buscarNombre = (lista: CatalogoItem[], id: number) => {
+  return lista.find((item) => item.id === id)?.nombre ?? '-'
+}
+
+const condicionTexto = (id: number): CondicionTexto | '-' => {
+  const nombre = buscarNombre(props.catalogos.condiciones, id)
+  if (
+    nombre === 'Nuevo' ||
+    nombre === 'Reparado' ||
+    nombre === 'Overhaul' ||
+    nombre === 'Reacondicionado'
+  ) {
+    return nombre
+  }
+  return '-'
+}
+
 const resetForm = () => {
-  Object.assign(form, crearArticuloVacio())
+  Object.assign(form, {
+    codigo: '',
+    noSerie: '',
+    descripcion: '',
+    categoria: 0,
+    unidadMedida: 0,
+    stock: 0,
+    almacen: 0,
+    ubicacion: '',
+    proveedor: 0,
+    precioCompra: 0,
+    condicion: props.catalogos.condiciones[0]?.id ?? 0,
+  })
 }
 
 const resetAll = () => {
@@ -71,9 +94,7 @@ watch(
   }
 )
 
-const close = () => {
-  emit('close')
-}
+const close = () => emit('close')
 
 const validarFormulario = () => {
   if (!form.codigo.trim()) {
@@ -112,7 +133,7 @@ const validarFormulario = () => {
     alert('El stock no puede ser negativo.')
     return false
   }
-  if (form.precio < 0) {
+  if (form.precioCompra < 0) {
     alert('El precio no puede ser negativo.')
     return false
   }
@@ -126,14 +147,14 @@ const agregarArticulo = () => {
     codigo: form.codigo.trim(),
     noSerie: form.noSerie.trim(),
     descripcion: form.descripcion.trim(),
-    categoria: form.categoria,
-    unidadMedida: form.unidadMedida,
+    categoria: Number(form.categoria),
+    unidadMedida: Number(form.unidadMedida),
     stock: Number(form.stock),
-    almacen: form.almacen,
+    almacen: Number(form.almacen),
     ubicacion: form.ubicacion.trim(),
-    proveedor: form.proveedor,
-    precio: Number(form.precio),
-    condicion: form.condicion,
+    proveedor: Number(form.proveedor),
+    precioCompra: Number(form.precioCompra),
+    condicion: Number(form.condicion),
   })
 
   resetForm()
@@ -160,8 +181,6 @@ const guardarTodos = () => {
 
       <div class="absolute inset-0 flex items-center justify-center p-4">
         <div class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
-          
-          <!-- Header -->
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
               <h2 class="text-xl font-semibold text-slate-900">Nuevo Artículo</h2>
@@ -179,9 +198,7 @@ const guardarTodos = () => {
             </button>
           </div>
 
-          <!-- Body -->
           <div class="flex-1 overflow-y-auto px-5 py-5 bg-slate-50">
-            <!-- Card formulario -->
             <div class="bg-slate-100/70 rounded-2xl border border-slate-200 p-5">
               <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Artículo</h3>
 
@@ -191,7 +208,6 @@ const guardarTodos = () => {
                   <input
                     v-model="form.codigo"
                     type="text"
-                    placeholder="Ej: ART-001"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -201,7 +217,6 @@ const guardarTodos = () => {
                   <input
                     v-model="form.noSerie"
                     type="text"
-                    placeholder="Número de serie"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -221,7 +236,6 @@ const guardarTodos = () => {
                   <input
                     v-model="form.descripcion"
                     type="text"
-                    placeholder="Descripción del artículo"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -229,12 +243,16 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Categoría *</label>
                   <select
-                    v-model="form.categoria"
+                    v-model.number="form.categoria"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option disabled value="">Seleccionar categoría</option>
-                    <option v-for="item in catalogos.categorias" :key="item" :value="item">
-                      {{ item }}
+                    <option :value="0" disabled>Seleccionar categoría</option>
+                    <option
+                      v-for="item in catalogos.categorias"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.nombre }}
                     </option>
                   </select>
                 </div>
@@ -242,12 +260,16 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Unidad de Medida *</label>
                   <select
-                    v-model="form.unidadMedida"
+                    v-model.number="form.unidadMedida"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option disabled value="">Seleccionar unidad</option>
-                    <option v-for="item in catalogos.unidades" :key="item" :value="item">
-                      {{ item }}
+                    <option :value="0" disabled>Seleccionar unidad</option>
+                    <option
+                      v-for="item in catalogos.unidades"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.nombre }}
                     </option>
                   </select>
                 </div>
@@ -255,12 +277,16 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Almacén *</label>
                   <select
-                    v-model="form.almacen"
+                    v-model.number="form.almacen"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option disabled value="">Seleccionar almacén</option>
-                    <option v-for="item in catalogos.almacenes" :key="item" :value="item">
-                      {{ item }}
+                    <option :value="0" disabled>Seleccionar almacén</option>
+                    <option
+                      v-for="item in catalogos.almacenes"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.nombre }}
                     </option>
                   </select>
                 </div>
@@ -270,7 +296,6 @@ const guardarTodos = () => {
                   <input
                     v-model="form.ubicacion"
                     type="text"
-                    placeholder="Ej: Estante A, Nivel 2, Posición 3"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -278,12 +303,16 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Proveedor *</label>
                   <select
-                    v-model="form.proveedor"
+                    v-model.number="form.proveedor"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option disabled value="">Seleccionar proveedor</option>
-                    <option v-for="item in catalogos.proveedores" :key="item" :value="item">
-                      {{ item }}
+                    <option :value="0" disabled>Seleccionar proveedor</option>
+                    <option
+                      v-for="item in catalogos.proveedores"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.nombre }}
                     </option>
                   </select>
                 </div>
@@ -291,7 +320,7 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Precio de Compra *</label>
                   <input
-                    v-model.number="form.precio"
+                    v-model.number="form.precioCompra"
                     type="number"
                     min="0"
                     step="0.01"
@@ -302,12 +331,16 @@ const guardarTodos = () => {
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Condición *</label>
                   <select
-                    v-model="form.condicion"
+                    v-model.number="form.condicion"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option disabled value="">Seleccionar condición</option>
-                    <option v-for="item in catalogos.condiciones" :key="item" :value="item">
-                      {{ item }}
+                    <option :value="0" disabled>Seleccionar condición</option>
+                    <option
+                      v-for="item in catalogos.condiciones"
+                      :key="item.id"
+                      :value="item.id"
+                    >
+                      {{ item.nombre }}
                     </option>
                   </select>
                 </div>
@@ -325,7 +358,6 @@ const guardarTodos = () => {
               </div>
             </div>
 
-            <!-- Lista -->
             <div class="mt-6">
               <h3 class="text-base font-semibold text-slate-900 mb-4">
                 Artículos Agregados ({{ totalArticulos }})
@@ -377,12 +409,47 @@ const guardarTodos = () => {
 
                     <div>
                       <p class="text-slate-500 text-xs">Precio:</p>
-                      <p class="text-sm font-semibold text-slate-900 mt-1">${{ articulo.precio }}</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">${{ articulo.precioCompra }}</p>
                     </div>
 
                     <div>
                       <p class="text-slate-500 text-xs">Ubicación:</p>
                       <p class="text-sm font-semibold text-slate-900 mt-1">{{ articulo.ubicacion || '-' }}</p>
+                    </div>
+
+                    <div>
+                      <p class="text-slate-500 text-xs">Categoría:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">
+                        {{ buscarNombre(catalogos.categorias, articulo.categoria) }}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-slate-500 text-xs">Unidad:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">
+                        {{ buscarNombre(catalogos.unidades, articulo.unidadMedida) }}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-slate-500 text-xs">Almacén:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">
+                        {{ buscarNombre(catalogos.almacenes, articulo.almacen) }}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-slate-500 text-xs">Proveedor:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">
+                        {{ buscarNombre(catalogos.proveedores, articulo.proveedor) }}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p class="text-slate-500 text-xs">Condición:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">
+                        {{ condicionTexto(articulo.condicion) }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -390,12 +457,12 @@ const guardarTodos = () => {
             </div>
           </div>
 
-          <!-- Footer -->
           <div class="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-white">
             <p class="text-sm text-slate-500">
-              {{ totalArticulos === 0
-                ? 'Agrega al menos un artículo para guardar'
-                : `${totalArticulos} artículos listos para guardar`
+              {{
+                totalArticulos === 0
+                  ? 'Agrega al menos un artículo para guardar'
+                  : `${totalArticulos} artículos listos para guardar`
               }}
             </p>
 

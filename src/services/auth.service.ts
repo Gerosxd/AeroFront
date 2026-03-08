@@ -1,5 +1,5 @@
 // src/services/auth.service.ts
-import http from '@/api/http';
+import http from '../api/http';
 
 export type LoginResponse = {
     token: string;
