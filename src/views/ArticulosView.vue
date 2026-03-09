@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Plus, Search, Filter, Box, ArrowDownCircle } from 'lucide-vue-next'
 import NuevoArticuloModal, { type PayloadNuevoArticulo } from '../components/NuevoArticuloModal.vue'
+import { guardarArticulos } from '../services/articulo.service'
 
 interface Articulo {
   id: string
@@ -42,17 +43,33 @@ const articulos = ref<Articulo[]>([])
 const entradas = ref<Entrada[]>([])
 
 const catalogos = ref({
-  categorias: ['Componentes', 'Fluidos', 'Kits', 'Lubricantes'],
-  unidades: ['Pza', 'Gal', 'Lts'],
-  almacenes: ['Principal', 'Secundario', 'Componentes'],
-  proveedores: [
-    'AeroPartes S.A.',
-    'Química Aero',
-    'SKF Aerospace',
-    'ExxonMobil Aviation',
-    'Pratt & Whitney'
+  categorias: [
+    { id: 1, nombre: 'Componentes' },
+    { id: 2, nombre: 'Fluidos' },
+    { id: 3, nombre: 'Kits' },
+    { id: 4, nombre: 'Lubricantes' }
   ],
-  condiciones: ['Nuevo', 'Reparado', 'Overhaul', 'Reacondicionado']
+  unidades: [
+    { id: 1, nombre: 'Pza' },
+    { id: 2, nombre: 'Gal' },
+    { id: 3, nombre: 'Lts' }
+  ],
+  almacenes: [
+    { id: 1, nombre: 'Principal' },
+    { id: 2, nombre: 'Secundario' },
+    { id: 3, nombre: 'Componentes' }
+  ],
+  proveedores: [
+    { id: 1, nombre: 'AeroPartes S.A.' },
+    { id: 2, nombre: 'Química Aero' },
+    { id: 3, nombre: 'SKF Aerospace' }
+  ],
+  condiciones: [
+    { id: 1, nombre: 'Nuevo' },
+    { id: 2, nombre: 'Reparado' },
+    { id: 3, nombre: 'Overhaul' },
+    { id: 4, nombre: 'Reacondicionado' }
+  ]
 })
 
 const formatCurrency = (value: number) =>
@@ -79,23 +96,30 @@ const getEntryStatusStyle = (estado: string) => {
   }
 }
 
-const guardarNuevoArticulo = (payload: PayloadNuevoArticulo[]) => {
-  const codigos = payload.map(i => i.codigo.toLowerCase())
-  const repetidos = codigos.filter((c, i) => codigos.indexOf(c) !== i)
+const guardarNuevoArticulo = async (payload: any[]) => {
+  try {
+    const response = await guardarArticulos(payload)
 
-  if (repetidos.length > 0) {
-    alert(`Hay códigos repetidos: ${[...new Set(repetidos)].join(', ')}`)
-    return
-  }
+    const nuevos = response.map((item: any) => ({
+      id: String(item.idArticulo),
+      codigo: item.codigo,
+      noSerie: item.noSerie,
+      descripcion: item.descripcion,
+      categoria: String(item.categoria),
+      unidadMedida: String(item.unidadMedida),
+      stock: item.stock,
+      almacen: String(item.almacen),
+      ubicacion: item.ubicacion,
+      proveedor: String(item.proveedor),
+      precio: Number(item.precioCompra),
+      condicion: 'Nuevo'
+    }))
 
-  for (const item of payload) {
-    const existe = articulos.value.some(
-      a => a.codigo.toLowerCase() === item.codigo.toLowerCase()
-    )
-    if (existe) {
-      alert(`El código ${item.codigo} ya existe`)
-      return
-    }
+    articulos.value.unshift(...nuevos)
+    showNuevoArticulo.value = false
+  } catch (error: any) {
+    console.error(error)
+    alert(error?.response?.data?.message ?? 'No se pudieron guardar los artículos')
   }
 
   const nuevos: Articulo[] = payload.map(item => ({
