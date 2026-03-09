@@ -89,7 +89,8 @@ const showModal = ref(false);
 // Lógica para el ID autoincremental PROV-XXX
 const getNextId = () => {
   const maxId = proveedores.value.reduce((max, p) => {
-    const num = parseInt(p.id.split('-')[1]);
+    // El "as string" le asegura a TS que ahí habrá un texto
+    const num = parseInt((p.id || '').split('-')[1] || '0');
     return num > max ? num : max;
   }, 0);
   return `PROV-${(maxId + 1).toString().padStart(3, '0')}`;
