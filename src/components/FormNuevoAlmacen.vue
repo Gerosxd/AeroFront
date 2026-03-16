@@ -2,7 +2,7 @@
 import { reactive, onMounted } from 'vue';
 import { X, Save, Building2, MapPin, Tag, User } from 'lucide-vue-next';
 
-// 1. Usamos la misma estructura de TypeScript que tu equipo
+
 interface Almacen {
   id?: string | number;
   nombre: string;
@@ -20,7 +20,7 @@ const emit = defineEmits<{
   (e: 'cerrar'): void;
 }>();
 
-// 2. Usamos 'reactive' como en ProveedoresForm.vue
+
 const form = reactive<Almacen>({
   nombre: '',
   ubicacion: '',
