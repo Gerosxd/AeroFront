@@ -4,6 +4,9 @@ import {
   Plus, Search, Filter, Settings, FileText, 
   Plane, Users, Briefcase, Calendar 
 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router'
+import NuevaAeronaveModal, { type PayloadNuevaAeronave } from '../components/NuevaAeronaveModal.vue'
+import { guardarAeronave } from '../services/aeronave.service'
 
 // --- 1. INTERFACES DE DATOS ---
 interface OrdenTrabajo {
@@ -23,13 +26,29 @@ interface OrdenTrabajo {
 
 interface Aeronave {
   matricula: string;
-  modelo: string;
-  fabricante: string;
-  serie: string;
-  cliente: string;
-  horas: string;
-  ciclos: string;
-  estado: 'Operativo' | 'En Mantenimiento';
+  nsAeronave: string;
+  modeloAeronave: string;
+
+  marcaAeronave: string;
+  tipoAeronave: string;
+
+  operador: string;
+
+  maMotorLH: string;
+  moMotorLH: string;
+  nsMotorLH: string;
+
+  maMotorRH: string;
+  moMotorRH: string;
+  nsMotorRH: string;
+
+  maMotorC: string;
+  moMotorC: string;
+  nsMotorC: string;
+
+  maAPU: string;
+  moAPU: string;
+  nsAPU: string;
 }
 
 interface Cliente {
@@ -75,9 +94,9 @@ const ordenes = ref<OrdenTrabajo[]>([
 ]);
 
 const aeronaves = ref<Aeronave[]>([
-  { matricula: 'XA-ABC', modelo: 'Boeing 737-800', fabricante: 'Boeing', serie: '12345', cliente: 'AeroMéxico', horas: '25,340', ciclos: '18,920', estado: 'Operativo' },
-  { matricula: 'XA-DEF', modelo: 'Airbus A320-200', fabricante: 'Airbus', serie: '67890', cliente: 'Volaris', horas: '18,750', ciclos: '14,200', estado: 'En Mantenimiento' },
-  { matricula: 'XA-GHI', modelo: 'Embraer E190', fabricante: 'Embraer', serie: '11223', cliente: 'Interjet', horas: '12,450', ciclos: '9,800', estado: 'Operativo' },
+{
+  matricula: "XA-ABC", nsAeronave: "12345", modeloAeronave: "B737-800", marcaAeronave: "Boeing", tipoAeronave: "Comercial", operador: "Aeromexico", maMotorLH: "CFM", moMotorLH: "CFM56",
+  nsMotorLH: "LH123", maMotorRH: "CFM", moMotorRH: "CFM56", nsMotorRH: "RH123", maMotorC: "", moMotorC: "", nsMotorC: "", maAPU: "Honeywell", moAPU: "131-9A", nsAPU: "APU123"}
 ]);
 
 const clientes = ref<Cliente[]>([
@@ -97,6 +116,97 @@ const reportes = ref<Reporte[]>([
   { id: 'REP-002', aeronave: 'XA-DEF', tipo: 'Inspección C', descripcion: 'Mantenimiento mayor 18 meses', fechaProg: '01/03/2026', horasLimite: '20,000', ciclosLimite: '15,000', prioridad: 'Alta', estado: 'Próximo' },
   { id: 'REP-003', aeronave: 'XA-GHI', tipo: 'Inspección B', descripcion: 'Revisión de 1000 horas', fechaProg: '20/04/2026', horasLimite: '13,500', ciclosLimite: '10,500', prioridad: 'Normal', estado: 'Programado' },
 ]);
+
+const showNuevaAeronave = ref(false)
+
+const abrirFormulario = () => {
+  showNuevaAeronave.value = true
+}
+
+const cerrarFormulario = () => {
+  showNuevaAeronave.value = false
+}
+
+const guardarNuevaAeronave = async (payload: PayloadNuevaAeronave) => {
+  try {
+
+    await guardarAeronave(payload)
+
+    // actualizar lista local
+    aeronaves.value.push({
+      matricula: payload.matricula,
+      nsAeronave: payload.nsAeronave,
+      modeloAeronave: payload.modeloAeronave,
+      marcaAeronave: payload.marcaAeronave,
+      tipoAeronave: payload.tipoAeronave,
+      operador: payload.operador,
+
+      maMotorLH: payload.maMotorLH,
+      moMotorLH: payload.moMotorLH,
+      nsMotorLH: payload.nsMotorLH,
+
+      maMotorRH: payload.maMotorRH,
+      moMotorRH: payload.moMotorRH,
+      nsMotorRH: payload.nsMotorRH,
+
+      maMotorC: payload.maMotorC,
+      moMotorC: payload.moMotorC,
+      nsMotorC: payload.nsMotorC,
+
+      maAPU: payload.maAPU,
+      moAPU: payload.moAPU,
+      nsAPU: payload.nsAPU
+    })
+
+    showNuevaAeronave.value = false
+
+  } catch (error) {
+    console.error("Error al guardar aeronave", error)
+  }
+}
+
+const nuevaAeronave = ref<Aeronave>({
+  matricula: "",
+  nsAeronave: "",
+  modeloAeronave: "",
+
+  marcaAeronave: "",
+  tipoAeronave: "",
+
+  operador: "",
+
+  maMotorLH: "",
+  moMotorLH: "",
+  nsMotorLH: "",
+
+  maMotorRH: "",
+  moMotorRH: "",
+  nsMotorRH: "",
+
+  maMotorC: "",
+  moMotorC: "",
+  nsMotorC: "",
+
+  maAPU: "",
+  moAPU: "",
+  nsAPU: ""
+})
+
+const obtenerModelo = async (modeloId: string) => {
+
+  const response = await fetch(`/api/modelos/${modeloId}`)
+  const data = await response.json()
+
+  nuevaAeronave.value.modeloAeronave = modeloId
+  nuevaAeronave.value.marcaAeronave = data.marca
+  nuevaAeronave.value.tipoAeronave = data.tipo
+}
+
+const catalogos = {
+  marcas: [],
+  tipos: [],
+  modelos: []
+}
 
 // --- 3. HELPERS VISUALES (COLORES) ---
 const getPriorityColor = (p: string) => {
@@ -295,37 +405,46 @@ const tabs = [
 
     <div v-else-if="activeTab === 'aeronaves'" class="space-y-4 animate-fade-in">
       <div class="flex justify-end">
-        <button class="bg-[#0f172a] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-slate-800">
-          <Plus class="w-4 h-4" /> Nueva Aeronave
+        <button
+          @click="abrirFormulario"
+          class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm">
+          <Plus class="w-4 h-4" />
+          Nueva Aeronave
         </button>
       </div>
+      <NuevaAeronaveModal
+        :open="showNuevaAeronave"
+        :catalogos="catalogos"
+        @close="showNuevaAeronave=false"
+        @submit="guardarNuevaAeronave"
+      />
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-max">
           <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
             <tr>
               <th class="px-6 py-4">Matrícula</th>
               <th class="px-6 py-4">Modelo</th>
-              <th class="px-6 py-4">Fabricante</th>
+              <th class="px-6 py-4">Marca</th>
+              <th class="px-6 py-4">Tipo</th>
               <th class="px-6 py-4">No. Serie</th>
-              <th class="px-6 py-4">Cliente</th>
-              <th class="px-6 py-4">Horas de Vuelo</th>
-              <th class="px-6 py-4">Ciclos</th>
-              <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4">Operador</th>
+              <th class="px-6 py-4">Motores LH/RH</th>
+              <th class="px-6 py-4">APU</th>
               <th class="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-for="nave in aeronaves" :key="nave.matricula" class="hover:bg-gray-50">
               <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ nave.matricula }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.modelo }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.fabricante }}</td>
-              <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ nave.serie }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.cliente }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.horas }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.ciclos }}</td>
-              <td class="px-6 py-4">
-                 <span :class="`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(nave.estado)}`">{{ nave.estado }}</span>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.modeloAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.marcaAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.tipoAeronave }}</td>
+              <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ nave.nsAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.operador }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ nave.moMotorLH }} / {{ nave.moMotorRH }}
               </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.moAPU }}</td>
               <td class="px-6 py-4 text-right">
                 <button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Editar</button>
               </td>

@@ -1,6 +1,7 @@
 import http from '../api/http'
 
 export interface PayloadNuevoArticuloBackend {
+  noParte: string
   codigo: string
   noSerie: string
   descripcion: string
