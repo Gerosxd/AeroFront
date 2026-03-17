@@ -44,14 +44,13 @@ export const obtenerEstadosEntrada = async (): Promise<CatalogoItem[]> => {
 }
 
 export const obtenerTodosLosCatalogos = async (): Promise<Catalogos> => {
-  const [categorias, unidades, almacenes, proveedores, condiciones,estadosEntrada] = await Promise.all([])
+  const [categorias, unidades, almacenes, proveedores, condiciones] =
     await Promise.all([
       obtenerCategorias(),
       obtenerUnidades(),
       obtenerAlmacenes(),
       obtenerProveedores(),
-      obtenerCondiciones(),
-      obtenerEstadosEntrada()
+      obtenerCondiciones()
     ])
 
   return {

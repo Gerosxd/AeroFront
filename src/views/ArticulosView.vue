@@ -63,7 +63,7 @@ const estadosEntrada = ref<CatalogoItem[]>([])
 
 const textoBotonPrincipal = computed(() => 'Nueva Entrada')
 
-const buscarNombre = (lista: CatalogoItem[], id: number | string) => {
+const buscarNombre = (lista: CatalogoItem[] = [], id: number | string) => {
   const idNumerico = Number(id)
   return lista.find(item => item.id === idNumerico)?.nombre ?? String(id)
 }
@@ -139,8 +139,21 @@ const cargarEntradas = async () => {
 
 const cargarCatalogos = async () => {
   try {
-    catalogos.value = await obtenerTodosLosCatalogos()
-    estadosEntrada.value = await obtenerEstadosEntrada()
+    const data = await obtenerTodosLosCatalogos()
+    const estados = await obtenerEstadosEntrada()
+
+    console.log('catalogos cargados =>', data)
+    console.log('estados cargados =>', estados)
+
+    catalogos.value = {
+      categorias: data?.categorias ?? [],
+      unidades: data?.unidades ?? [],
+      almacenes: data?.almacenes ?? [],
+      proveedores: data?.proveedores ?? [],
+      condiciones: data?.condiciones ?? []
+    }
+
+    estadosEntrada.value = estados ?? []
   } catch (error) {
     console.error('Error al cargar catálogos:', error)
   }
