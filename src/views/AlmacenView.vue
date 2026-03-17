@@ -13,7 +13,7 @@ interface Almacen {
 
 // 1. Lógica de Pestañas (Tabs)
 const activeTab = ref('General');
-const tabs = ['General', 'Artículos', 'Entradas', 'Salidas', 'Movimientos'];
+const tabs = ['General', /*'Artículos', 'Entradas', 'Salidas', 'Movimientos'*/];
 
 // 2. Datos simulados
 const almacenes = ref<Almacen[]>([
