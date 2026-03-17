@@ -80,16 +80,6 @@ const handleLogin = async () => {
             </div>
           </div>
 
-          <div class="flex items-center justify-between text-sm font-medium">
-            <label class="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-gray-800">
-              <input v-model="rememberMe" type="checkbox" class="w-4.5 h-4.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors" />
-              Recordarme
-            </label>
-            <a href="#" class="text-blue-600 hover:text-blue-700 hover:underline">
-              ¿Olvidaste tu contraseña?
-            </a>
-          </div>
-
           <button 
             type="submit" 
             :disabled="isLoading"
