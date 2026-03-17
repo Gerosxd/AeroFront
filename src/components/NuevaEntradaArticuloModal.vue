@@ -77,7 +77,15 @@ const resetAll = () => {
 watch(
   () => props.open,
   (value) => {
-    if (value) resetAll()
+    if (value) {
+      console.log('categorias =>', props.categorias)
+      console.log('unidades =>', props.unidades)
+      console.log('proveedores =>', props.proveedores)
+      console.log('almacenes =>', props.almacenes)
+      console.log('condiciones =>', props.condiciones)
+      console.log('estadosEntrada =>', props.estadosEntrada)
+      resetAll()
+    }
   }
 )
 
