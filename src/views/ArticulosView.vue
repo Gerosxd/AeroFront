@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { Plus, Search, Filter, Box, ArrowDownCircle } from 'lucide-vue-next'
-import NuevoArticuloModal from '../components/NuevoArticuloModal.vue'
-import { guardarArticulos } from '../services/articulo.service'
-import NuevaSalidaArtModal, { type PayloadNuevaSalidaArt } from '../components/NuevaSalidaArtModal.vue'
 
 import NuevaEntradaArticuloModal from '../components/NuevaEntradaArticuloModal.vue'
 import DetalleEntradaArticuloModal from '../components/DetalleEntradaArticuloModal.vue'
+
+import NuevaSalidaArtModal from '../components/NuevaSalidaArtModal.vue'
 
 import { listarArticulos } from '../services/articulo.service'
 import {
@@ -71,7 +70,7 @@ const showNuevaSalida = ref(false)
 const activeTab = ref<'listado' | 'entradas' | 'salidas'>('listado')
 const showNuevaEntrada = ref(false)
 const showDetalleEntrada = ref(false)
-const activeTab = ref<'listado' | 'entradas'>('listado')
+
 
 const articulos = ref<ArticuloTabla[]>([])
 const entradas = ref<EntradaArticuloListadoResponse[]>([])
@@ -208,26 +207,6 @@ const guardarNuevaEntrada = async (payload: EntradaArticuloRegistroRequest) => {
     console.error(error)
     alert(error?.response?.data?.message ?? 'No se pudo registrar la entrada completa')
   }
-}
-
-  const nuevos: Articulo[] = payload.map(item => ({
-    id: makeId(),
-    noParte: item.noParte,
-    codigo: item.codigo,
-    noSerie: item.noSerie,
-    descripcion: item.descripcion,
-    categoria: item.categoria,
-    unidadMedida: item.unidadMedida,
-    stock: item.stock,
-    almacen: item.almacen,
-    ubicacion: item.ubicacion,
-    proveedor: item.proveedor,
-    precio: item.precio,
-    condicion: item.condicion
-  }))
-
-  articulos.value.unshift(...nuevos)
-  showNuevoArticulo.value = false
 }
 
 const registrarSalidaCreada = (payload: PayloadNuevaSalidaArt) => {
@@ -377,7 +356,7 @@ onMounted(async () => {
         <table class="w-full text-left">
           <thead class="text-gray-500 text-xs uppercase border-b">
             <tr>
-              <th class="px-6 py-4">No. Parte</th>
+
               <th class="px-6 py-4">Código</th>
               <th class="px-6 py-4">Número de Parte</th>
               <th class="px-6 py-4">Serie</th>
@@ -394,9 +373,6 @@ onMounted(async () => {
           </thead>
 
           <tbody class="divide-y">
-            <tr v-for="art in articulos" :key="art.id">
-
-              <td class="px-6 py-4 text-sm font-medium">{{ art.noParte }}</td>
             <tr v-for="art in articulosFiltrados" :key="art.id">
               <td class="px-6 py-4 text-sm font-medium">{{ art.codigo }}</td>
               <td class="px-6 py-4 text-sm">{{ art.noSerie }}</td>
@@ -519,6 +495,12 @@ onMounted(async () => {
 
     <DetalleEntradaArticuloModal
       :open="showDetalleEntrada"
+      :entrada="entradaSeleccionada"
+      @close="showDetalleEntrada = false"
+    />
+
+    <SalidaArtModal
+      :open="showSalidaArt"
       :entrada="entradaSeleccionada"
       @close="showDetalleEntrada = false"
     />
