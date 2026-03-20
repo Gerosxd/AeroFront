@@ -88,7 +88,7 @@ const close = () => emit('close')
                   <thead class="text-slate-500 text-xs uppercase border-b">
                     <tr>
                       <th class="px-5 py-4">ID Artículo</th>
-                      <th class="px-5 py-4">Código</th>
+                      <th class="px-5 py-4">Número de parte</th>
                       <th class="px-5 py-4">Descripción</th>
                       <th class="px-5 py-4">Cantidad</th>
                       <th class="px-5 py-4">Ubicación</th>

@@ -305,7 +305,7 @@ const close = () => emit('close')
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-slate-800 mb-2">Código *</label>
+                  <label class="block text-sm font-medium text-slate-800 mb-2">Número de parte *</label>
                   <input
                     v-model="formDetalle.codigo"
                     type="text"
@@ -433,7 +433,7 @@ const close = () => emit('close')
                 >
                   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                     <div>
-                      <p class="text-slate-500 text-xs">Código:</p>
+                      <p class="text-slate-500 text-xs">Número de parte:</p>
                       <p class="text-sm font-semibold text-slate-900 mt-1">{{ item.codigo }}</p>
                     </div>
 
