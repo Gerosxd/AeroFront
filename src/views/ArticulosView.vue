@@ -144,6 +144,7 @@ const cargarArticulos = async () => {
     const data = await listarArticulos()
 
     articulos.value = data.map((item: any) => ({
+      idArticulo: item.idArticulo,
       id: String(item.idArticulo),
       noParte: String(item.noParte ?? ''),
       codigo: item.codigo,
@@ -279,8 +280,8 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Artículos</h1>
-        <p class="text-gray-500 text-sm">Gestión de artículos aeronáuticos</p>
+        <h1 class="text-2xl font-bold text-gray-900">Componente / Parte</h1>
+        <p class="text-gray-500 text-sm">Gestión de Componente / Parte aeronáuticos</p>
       </div>
 
       <button
@@ -315,14 +316,14 @@ onMounted(async () => {
             'py-3 border-b-2 text-sm'
           ]"
         >
-          Entradas de Artículos
+          Entradas de Componente / Parte
         </button>
 
         <button
           @click="activeTab='salidas'"
           :class="[activeTab==='salidas'?'border-blue-600 text-blue-600 font-semibold':'border-transparent text-gray-500','py-3 border-b-2 text-sm']"
         >
-          Salidas de Artículos
+          Salidas de Componente / Parte
         </button>
 
       </nav>
@@ -350,7 +351,7 @@ onMounted(async () => {
         <div class="p-4 border-b bg-gray-50">
           <h3 class="font-semibold flex items-center gap-2">
             <Box class="w-4 h-4" />
-            Catálogo de Artículos
+            Catálogo de Componente / Parte
           </h3>
         </div>
 
@@ -358,7 +359,6 @@ onMounted(async () => {
           <thead class="text-gray-500 text-xs uppercase border-b">
             <tr>
 
-              <th class="px-6 py-4">Código</th>
               <th class="px-6 py-4">Número de Parte</th>
               <th class="px-6 py-4">Serie</th>
               <th class="px-6 py-4">Descripción</th>
@@ -396,7 +396,7 @@ onMounted(async () => {
 
             <tr v-if="articulosFiltrados.length === 0">
               <td colspan="11" class="px-6 py-8 text-center text-sm text-gray-500">
-                No hay artículos registrados.
+                No hay Componente / Parte registrados.
               </td>
             </tr>
           </tbody>
@@ -410,7 +410,7 @@ onMounted(async () => {
 
         <h3 class="font-semibold flex items-center gap-2">
           <ArrowDownCircle class="w-4 h-4"/>
-          Salidas de Artículos
+          Salidas de Componente / Parte
         </h3>
 
         <button

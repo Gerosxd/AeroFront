@@ -16,7 +16,7 @@ const menuItems: MenuItem[] = [
   { name: 'Home', icon: Home, path: '/app/dashboard' },
   { name: 'Almacen', icon: Package, path: '/app/almacen' },
   { name: 'Proveedores', icon: Users, path: '/app/proveedores' },
-  { name: 'Articulos', icon: Wrench, path: '/app/articulos' },
+  { name: 'Componente / Parte', icon: Wrench, path: '/app/articulos' },
   { name: 'Ingenieria', icon: Settings, path: '/app/ingenieria' },
 ];
 
