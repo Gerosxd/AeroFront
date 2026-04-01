@@ -36,7 +36,8 @@ const formEntrada = reactive({
   proveedor: 0,
   almacenDestino: 0,
   estadoEntrada: 0,
-  observaciones: ''
+  observaciones: '',
+  recibidoPor: props.nombreUsuario
 })
 
 const crearDetalleVacio = (): EntradaArticuloDetalleRequest => ({
@@ -186,6 +187,8 @@ const guardarEntrada = () => {
     observaciones: formEntrada.observaciones.trim(),
     detalles: [...detalles.value]
   })
+  alert('¡Registro exitoso! La entrada se ha guardado correctamente.')
+  close()
 }
 
 const close = () => emit('close')
@@ -200,7 +203,7 @@ const close = () => emit('close')
         <div class="w-full max-w-7xl max-h-[95vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
-              <h2 class="text-xl font-semibold text-slate-900">Nueva Entrada de Artículos</h2>
+              <h2 class="text-xl font-semibold text-slate-900">Nueva Entrada de Componente / Parte</h2>
               <p class="text-slate-500 mt-1 text-sm">
                 Artículos agregados: {{ totalArticulos }}
               </p>
@@ -245,7 +248,7 @@ const close = () => emit('close')
                   <input
                     type="text"
                     :value="nombreUsuario"
-                    disabled
+
                     class="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-500"
                   />
                 </div>
@@ -301,7 +304,7 @@ const close = () => emit('close')
             </div>
 
             <div class="bg-slate-100/70 rounded-2xl border border-slate-200 p-5">
-              <h3 class="text-base font-semibold text-slate-900 mb-5">Agregar Artículo</h3>
+              <h3 class="text-base font-semibold text-slate-900 mb-5">Agregar Componente / Parte</h3>
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -390,16 +393,24 @@ const close = () => emit('close')
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-slate-800 mb-2">Precio compra *</label>
-                  <input
-                    v-model.number="formDetalle.precioCompra"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900"
-                  />
+                  <label class="block text-sm font-medium text-slate-800 mb-2">Precio de Compra *</label>
+                  <div class="flex gap-2">
+                    <input
+                        v-model.number="formDetalle.precioCompra"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                        v-model="formDetalle.moneda"
+                        class="w-24 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="USD">USD</option>
+                      <option value="MXN">MXN</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
 
               <div class="flex justify-end mt-5">
                 <button
@@ -408,21 +419,21 @@ const close = () => emit('close')
                   class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50 shadow-sm"
                 >
                   <Plus class="w-4 h-4" />
-                  Agregar Artículo a la Entrada
+                  Agregar Componente / Parte a la Entrada
                 </button>
               </div>
             </div>
 
             <div>
               <h3 class="text-base font-semibold text-slate-900 mb-4">
-                Artículos Agregados ({{ totalArticulos }})
+                Componente / Parte Agregados ({{ totalArticulos }})
               </h3>
 
               <div
                 v-if="detalles.length === 0"
                 class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 text-sm"
               >
-                Aún no has agregado artículos a la entrada.
+                Aún no has agregado Componente / Parte a la entrada.
               </div>
 
               <div v-else class="space-y-3">
@@ -528,6 +539,7 @@ const close = () => emit('close')
           </div>
         </div>
       </div>
+    </div>
     </div>
   </teleport>
 </template>

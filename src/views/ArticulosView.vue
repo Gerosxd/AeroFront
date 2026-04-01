@@ -5,6 +5,8 @@ import { Plus, Search, Filter, Box, ArrowDownCircle } from 'lucide-vue-next'
 import NuevaEntradaArticuloModal from '../components/NuevaEntradaArticuloModal.vue'
 import DetalleEntradaArticuloModal from '../components/DetalleEntradaArticuloModal.vue'
 
+import NuevaSalidaArtModal from '../components/NuevaSalidaArtModal.vue'
+
 import { listarArticulos } from '../services/articulo.service'
 import {
   obtenerTodosLosCatalogos,
@@ -25,6 +27,7 @@ import type {
 
 interface ArticuloTabla {
   id: string
+  noParte: string
   codigo: string
   noSerie: string
   descripcion: string
@@ -35,12 +38,40 @@ interface ArticuloTabla {
   ubicacion: string
   proveedor: string
   precio: number
+  moneda: String
   condicion: 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
 }
 
+interface Entrada {
+  id: string
+  fecha: string
+  codigoArticulo: string
+  descripcion: string
+  cantidad: number
+  unidadMedida: string
+  proveedor: string
+  almacen: string
+  ubicacion: string
+  recibidoPor: string
+  estado: 'Completado' | 'Pendiente'
+}
+
+interface Salida {
+  id: string
+  fecha: string
+  noSalida: string
+  destinatario: string
+  direccion: string
+  articulos: number
+  estado: 'Completado' | 'Pendiente'
+}
+
+const showNuevoArticulo = ref(false)
+const showNuevaSalida = ref(false)
+const activeTab = ref<'listado' | 'entradas' | 'salidas'>('listado')
 const showNuevaEntrada = ref(false)
 const showDetalleEntrada = ref(false)
-const activeTab = ref<'listado' | 'entradas'>('listado')
+
 
 const articulos = ref<ArticuloTabla[]>([])
 const entradas = ref<EntradaArticuloListadoResponse[]>([])
@@ -50,6 +81,8 @@ const loadingDetalle = ref(false)
 
 const busquedaArticulos = ref('')
 const busquedaEntradas = ref('')
+
+const salidas = ref<Salida[]>([])
 
 const catalogos = ref({
   categorias: [] as CatalogoItem[],
@@ -112,6 +145,7 @@ const cargarArticulos = async () => {
 
     articulos.value = data.map((item: any) => ({
       id: String(item.idArticulo),
+      noParte: String(item.noParte ?? ''),
       codigo: item.codigo,
       noSerie: item.noSerie,
       descripcion: item.descripcion,
@@ -176,6 +210,18 @@ const guardarNuevaEntrada = async (payload: EntradaArticuloRegistroRequest) => {
   }
 }
 
+const registrarSalidaCreada = (payload: PayloadNuevaSalidaArt) => {
+  salidas.value.unshift({
+    id: payload.noSalida || makeId(),
+    fecha: payload.fecha,
+    noSalida: payload.noSalida,
+    destinatario: payload.destinatario,
+    direccion: payload.direccionDestinatario,
+    articulos: payload.detalles.length,
+    estado: 'Pendiente'
+  })
+  showNuevaSalida.value = false
+}
 const verDetalleEntrada = async (idEntrada: number) => {
   try {
     loadingDetalle.value = true
@@ -271,6 +317,14 @@ onMounted(async () => {
         >
           Entradas de Artículos
         </button>
+
+        <button
+          @click="activeTab='salidas'"
+          :class="[activeTab==='salidas'?'border-blue-600 text-blue-600 font-semibold':'border-transparent text-gray-500','py-3 border-b-2 text-sm']"
+        >
+          Salidas de Artículos
+        </button>
+
       </nav>
     </div>
 
@@ -303,6 +357,8 @@ onMounted(async () => {
         <table class="w-full text-left">
           <thead class="text-gray-500 text-xs uppercase border-b">
             <tr>
+
+              <th class="px-6 py-4">Código</th>
               <th class="px-6 py-4">Número de Parte</th>
               <th class="px-6 py-4">Serie</th>
               <th class="px-6 py-4">Descripción</th>
@@ -347,6 +403,66 @@ onMounted(async () => {
         </table>
       </div>
     </div>
+
+    <div v-if="activeTab==='salidas'" class="space-y-6">
+
+      <div class="flex justify-between items-center">
+
+        <h3 class="font-semibold flex items-center gap-2">
+          <ArrowDownCircle class="w-4 h-4"/>
+          Salidas de Artículos
+        </h3>
+
+        <button
+            @click="showNuevaSalida=true"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0f172a] text-white text-sm font-medium hover:bg-slate-800"
+        >
+          <Plus class="w-4 h-4"/>
+          Generar salida
+        </button>
+
+      </div>
+
+
+      <div class="bg-white border rounded-xl overflow-hidden shadow-sm">
+
+        <table class="w-full text-left">
+
+          <thead class="text-gray-500 text-xs uppercase border-b">
+          <tr>
+            <th class="px-6 py-4">No. salida</th>
+            <th class="px-6 py-4">Fecha</th>
+            <th class="px-6 py-4">Destinatario</th>
+            <th class="px-6 py-4">Dirección</th>
+            <th class="px-6 py-4">Artículos</th>
+            <th class="px-6 py-4">Estado</th>
+          </tr>
+          </thead>
+
+          <tbody class="divide-y">
+
+          <tr v-for="salida in salidas" :key="salida.id">
+
+            <td class="px-6 py-4 text-sm font-medium">{{ salida.noSalida }}</td>
+            <td class="px-6 py-4 text-sm">{{ salida.fecha }}</td>
+            <td class="px-6 py-4 text-sm">{{ salida.destinatario }}</td>
+            <td class="px-6 py-4 text-sm">{{ salida.direccion }}</td>
+            <td class="px-6 py-4 text-sm">{{ salida.articulos }}</td>
+
+            <td class="px-6 py-4">
+    <span
+        :class="`px-2 py-1 rounded-full text-xs font-semibold ${getEntryStatusStyle(salida.estado)}`"
+    >
+    {{ salida.estado }}
+    </span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      </div>
+
+
 
     <div v-if="activeTab === 'entradas'" class="space-y-6">
       <div class="bg-white p-4 rounded-xl border flex gap-3">
@@ -443,5 +559,14 @@ onMounted(async () => {
       :entrada="entradaSeleccionada"
       @close="showDetalleEntrada = false"
     />
+
+    <NuevaSalidaArtModal
+      :open="showNuevaSalida"
+      :inventario="articulos"
+      :entrada="entradaSeleccionada"
+      @close="showNuevaSalida = false"
+      @created="registrarSalidaCreada"
+    />
   </div>
+
 </template>

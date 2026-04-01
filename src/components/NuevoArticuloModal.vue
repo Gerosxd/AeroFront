@@ -7,6 +7,7 @@ import type { PayloadNuevoArticuloBackend } from '../services/articulo.service'
 type CondicionTexto = 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
 
 interface ArticuloPreview {
+  noParte: string
   codigo: string
   noSerie: string
   descripcion: string
@@ -17,6 +18,7 @@ interface ArticuloPreview {
   ubicacion: string
   proveedor: number
   precioCompra: number
+  moneda: String
   condicion: number
 }
 
@@ -31,6 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const crearArticuloVacio = (): ArticuloPreview => ({
+  noParte: '',
   codigo: '',
   noSerie: '',
   descripcion: '',
@@ -41,6 +44,7 @@ const crearArticuloVacio = (): ArticuloPreview => ({
   ubicacion: '',
   proveedor: 0,
   precioCompra: 0,
+  moneda: 'MXN',
   condicion: 0,
 })
 
@@ -68,6 +72,7 @@ const condicionTexto = (id: number): CondicionTexto | '-' => {
 
 const resetForm = () => {
   Object.assign(form, {
+    noParte: '',
     codigo: '',
     noSerie: '',
     descripcion: '',
@@ -97,6 +102,10 @@ watch(
 const close = () => emit('close')
 
 const validarFormulario = () => {
+  if (!form.noParte.trim()) {
+    alert('El No. parte es obligatorio.')
+    return false
+  }
   if (!form.codigo.trim()) {
     alert('El código es obligatorio.')
     return false
@@ -144,6 +153,7 @@ const agregarArticulo = () => {
   if (!validarFormulario()) return
 
   articulosAgregados.push({
+    noParte: form.noParte.trim(),
     codigo: form.codigo.trim(),
     noSerie: form.noSerie.trim(),
     descripcion: form.descripcion.trim(),
@@ -183,7 +193,7 @@ const guardarTodos = () => {
         <div class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
-              <h2 class="text-xl font-semibold text-slate-900">Nuevo Artículo</h2>
+              <h2 class="text-xl font-semibold text-slate-900">Nuevo Componente / Parte</h2>
               <p class="text-slate-500 mt-1 text-sm">
                 Artículos agregados: {{ totalArticulos }}
               </p>
@@ -200,9 +210,18 @@ const guardarTodos = () => {
 
           <div class="flex-1 overflow-y-auto px-5 py-5 bg-slate-50">
             <div class="bg-slate-100/70 rounded-2xl border border-slate-200 p-5">
-              <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Artículo</h3>
+              <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Componente / Parte</h3>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-800 mb-2">No. Parte *</label>
+                  <input
+                    v-model="form.noParte"
+                    type="text"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Código *</label>
                   <input
@@ -231,7 +250,7 @@ const guardarTodos = () => {
                   />
                 </div>
 
-                <div class="md:col-span-3">
+                <div class="md:col-span-4">
                   <label class="block text-sm font-medium text-slate-800 mb-2">Descripción *</label>
                   <input
                     v-model="form.descripcion"
@@ -326,6 +345,13 @@ const guardarTodos = () => {
                     step="0.01"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <select
+                      v-model="form.moneda"
+                      class="w-24 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="MXN">MXN</option>
+                  </select>
                 </div>
 
                 <div>
@@ -376,7 +402,12 @@ const guardarTodos = () => {
                   :key="`${articulo.codigo}-${index}`"
                   class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+                    <div>
+                      <p class="text-slate-500 text-xs">No. Parte:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">{{ articulo.noParte }}</p>
+                    </div>
+
                     <div>
                       <p class="text-slate-500 text-xs">Código:</p>
                       <p class="text-sm font-semibold text-slate-900 mt-1">{{ articulo.codigo }}</p>
