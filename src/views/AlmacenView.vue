@@ -5,7 +5,7 @@ import FormNuevoAlmacen from '../components/FormNuevoAlmacen.vue';
 import { obtenerAlmacenes, crearAlmacen, actualizarAlmacen, type Almacen } from '../services/almacen.service';
 
 const activeTab = ref('General');
-const tabs = ['General', 'Artículos', 'Entradas', 'Salidas', 'Movimientos'];
+const tabs = ['General'];
 
 const almacenes = ref<Almacen[]>([]);
 const searchQuery = ref('');
