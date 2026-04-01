@@ -18,6 +18,7 @@ interface ArticuloPreview {
   ubicacion: string
   proveedor: number
   precioCompra: number
+  moneda: String
   condicion: number
 }
 
@@ -43,6 +44,7 @@ const crearArticuloVacio = (): ArticuloPreview => ({
   ubicacion: '',
   proveedor: 0,
   precioCompra: 0,
+  moneda: 'MXN',
   condicion: 0,
 })
 
@@ -191,7 +193,7 @@ const guardarTodos = () => {
         <div class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
-              <h2 class="text-xl font-semibold text-slate-900">Nuevo Artículo</h2>
+              <h2 class="text-xl font-semibold text-slate-900">Nuevo Componente / Parte</h2>
               <p class="text-slate-500 mt-1 text-sm">
                 Artículos agregados: {{ totalArticulos }}
               </p>
@@ -208,7 +210,7 @@ const guardarTodos = () => {
 
           <div class="flex-1 overflow-y-auto px-5 py-5 bg-slate-50">
             <div class="bg-slate-100/70 rounded-2xl border border-slate-200 p-5">
-              <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Artículo</h3>
+              <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Componente / Parte</h3>
 
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -343,6 +345,13 @@ const guardarTodos = () => {
                     step="0.01"
                     class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <select
+                      v-model="form.moneda"
+                      class="w-24 rounded-xl border border-slate-200 bg-white px-2 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="MXN">MXN</option>
+                  </select>
                 </div>
 
                 <div>

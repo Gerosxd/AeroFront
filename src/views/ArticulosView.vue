@@ -38,6 +38,7 @@ interface ArticuloTabla {
   ubicacion: string
   proveedor: string
   precio: number
+  moneda: String
   condicion: 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
 }
 

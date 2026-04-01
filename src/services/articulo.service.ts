@@ -11,6 +11,7 @@ export interface PayloadNuevoArticuloBackend {
   ubicacion: string
   proveedor: number
   precioCompra: number
+  moneda: String
   stock: number
   condicion: number
 }

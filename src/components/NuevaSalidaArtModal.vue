@@ -37,6 +37,7 @@ export interface PayloadNuevaSalidaArt {
 const props = defineProps<{
   open: boolean
   inventario?: ArticuloBusqueda[]
+  entrada: any
 }>()
 
 const emit = defineEmits<{
