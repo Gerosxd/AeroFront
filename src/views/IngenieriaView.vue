@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { 
-  Plus, Search, Building2, Edit2, Trash2, AlertCircle, Plane, Wrench 
+  Plus, Search, Building2, Edit2, Trash2, AlertCircle, Plane, Wrench
 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router'
+import NuevaAeronaveModal, { type PayloadNuevaAeronave } from '../components/NuevaAeronaveModal.vue'
+import { guardarAeronave } from '../services/aeronave.service'
 
 // --- IMPORTACIONES DE CLIENTES ---
 import FormNuevoCliente from '../components/FormNuevoCliente.vue';
@@ -12,8 +15,8 @@ import {
 
 // --- IMPORTACIONES DE MODELOS ---
 import FormNuevoModelo from '../components/FormNuevoModelo.vue';
-import { 
-  guardarModelo, listarModelos, actualizarModelo, eliminarModeloService, type PayloadModeloBackend 
+import {
+  guardarModelo, listarModelos, actualizarModelo, eliminarModeloService, type PayloadModeloBackend
 } from '../services/modelo.service';
 
 
@@ -99,8 +102,8 @@ const cargarModelos = async () => {
 const modelosFiltrados = computed(() => {
   if (!searchQueryModelos.value) return modelosAPI.value;
   const query = searchQueryModelos.value.toLowerCase();
-  return modelosAPI.value.filter(m => 
-    m.modelo?.toLowerCase().includes(query) || 
+  return modelosAPI.value.filter(m =>
+    m.modelo?.toLowerCase().includes(query) ||
     m.marca?.toLowerCase().includes(query)
   );
 });
@@ -123,6 +126,107 @@ const eliminarModeloLocal = async (id: number) => {
     } catch (error) {
       alert("Error al eliminar el modelo.");
     }
+  }
+}
+
+const showNuevaAeronave = ref(false)
+
+const abrirFormulario = () => {
+  showNuevaAeronave.value = true
+}
+
+const cerrarFormulario = () => {
+  showNuevaAeronave.value = false
+}
+
+const guardarNuevaAeronave = async (payload: PayloadNuevaAeronave) => {
+  try {
+
+    await guardarAeronave(payload)
+
+    // actualizar lista local
+    aeronaves.value.push({
+      matricula: payload.matricula,
+      nsAeronave: payload.nsAeronave,
+      modeloAeronave: payload.modeloAeronave,
+      marcaAeronave: payload.marcaAeronave,
+      tipoAeronave: payload.tipoAeronave,
+      operador: payload.operador,
+
+      maMotorLH: payload.maMotorLH,
+      moMotorLH: payload.moMotorLH,
+      nsMotorLH: payload.nsMotorLH,
+
+      maMotorRH: payload.maMotorRH,
+      moMotorRH: payload.moMotorRH,
+      nsMotorRH: payload.nsMotorRH,
+
+      maMotorC: payload.maMotorC,
+      moMotorC: payload.moMotorC,
+      nsMotorC: payload.nsMotorC,
+
+      maAPU: payload.maAPU,
+      moAPU: payload.moAPU,
+      nsAPU: payload.nsAPU
+    })
+
+    showNuevaAeronave.value = false
+
+  } catch (error) {
+    console.error("Error al guardar aeronave", error)
+  }
+}
+
+const nuevaAeronave = ref<Aeronave>({
+  matricula: "",
+  nsAeronave: "",
+  modeloAeronave: "",
+
+  marcaAeronave: "",
+  tipoAeronave: "",
+
+  operador: "",
+
+  maMotorLH: "",
+  moMotorLH: "",
+  nsMotorLH: "",
+
+  maMotorRH: "",
+  moMotorRH: "",
+  nsMotorRH: "",
+
+  maMotorC: "",
+  moMotorC: "",
+  nsMotorC: "",
+
+  maAPU: "",
+  moAPU: "",
+  nsAPU: ""
+})
+
+const obtenerModelo = async (modeloId: string) => {
+
+  const response = await fetch(`/api/modelos/${modeloId}`)
+  const data = await response.json()
+
+  nuevaAeronave.value.modeloAeronave = modeloId
+  nuevaAeronave.value.marcaAeronave = data.marca
+  nuevaAeronave.value.tipoAeronave = data.tipo
+}
+
+const catalogos = {
+  marcas: [],
+  tipos: [],
+  modelos: []
+}
+
+// --- 3. HELPERS VISUALES (COLORES) ---
+const getPriorityColor = (p: string) => {
+  switch(p) {
+    case 'Urgente': return 'bg-red-100 text-red-700 border-red-200';
+    case 'Alta': return 'bg-orange-100 text-orange-700 border-orange-200';
+    case 'Media': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+    default: return 'bg-green-100 text-green-700 border-green-200';
   }
 };
 
@@ -161,6 +265,7 @@ const tabs = [
   { id: 'modelos', label: 'Modelos' },
   { id: 'reportes', label: 'Reportes Programados' },
 ];
+
 </script>
 
 <template>
@@ -195,7 +300,7 @@ const tabs = [
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input v-model="searchQueryClientes" type="text" placeholder="Buscar por nombre, RFC o contacto..." 
+          <input v-model="searchQueryClientes" type="text" placeholder="Buscar por nombre, RFC o contacto..."
             class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"/>
         </div>
         <button @click="abrirModalCrearCliente" class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md">
@@ -253,38 +358,56 @@ const tabs = [
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <div class="relative w-full sm:w-96">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input v-model="searchQueryModelos" type="text" placeholder="Buscar modelo o marca..." 
+          <input v-model="searchQueryModelos" type="text" placeholder="Buscar modelo o marca..."
             class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"/>
         </div>
         <button @click="abrirModalCrearModelo" class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md">
           <Plus class="w-4 h-4" /> Nuevo Modelo
         </button>
       </div>
+      </div>
 
+    <div v-else-if="activeTab === 'aeronaves'" class="space-y-4 animate-fade-in">
+      <div class="flex justify-end">
+        <button
+          @click="abrirFormulario"
+          class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm">
+          <Plus class="w-4 h-4" />
+          Nueva Aeronave
+        </button>
+      </div>
+      <NuevaAeronaveModal
+        :open="showNuevaAeronave"
+        :catalogos="catalogos"
+        @close="showNuevaAeronave=false"
+        @submit="guardarNuevaAeronave"
+      />
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
         <table class="w-full text-left border-collapse min-w-max">
           <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
             <tr>
-              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Matrícula</th>
               <th class="px-6 py-4">Modelo</th>
-              <th class="px-6 py-4">Marca</th>
-              <th class="px-6 py-4">Tipo (ID)</th>
+              <th class="px-6 py-4">Fabricante</th>
+              <th class="px-6 py-4">No. Serie</th>
+              <th class="px-6 py-4">Cliente</th>
+              <th class="px-6 py-4">Horas de Vuelo</th>
+              <th class="px-6 py-4">Ciclos</th>
               <th class="px-6 py-4">Estado</th>
               <th class="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-if="modelosFiltrados.length === 0">
-              <td colspan="6" class="p-8 text-center text-gray-500">No se encontraron modelos registrados.</td>
-            </tr>
-            <tr v-for="mod in modelosFiltrados" :key="mod.idModelo" class="hover:bg-gray-50 group">
-              <td class="px-6 py-4 text-gray-500 text-xs">{{ mod.idModelo }}</td>
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
-                <div class="flex items-center gap-2"><Plane class="w-4 h-4 text-gray-400" />{{ mod.modelo }}</div>
+            <tr v-for="nave in aeronaves" :key="nave.matricula" class="hover:bg-gray-50">
+              <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ nave.matricula }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.modeloAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.marcaAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.tipoAeronave }}</td>
+              <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ nave.nsAeronave }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.operador }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ nave.moMotorLH }} / {{ nave.moMotorRH }}
               </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.marca }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm"><span class="px-2 py-1 bg-gray-100 rounded text-xs font-mono">{{ mod.tipoAeronave || 'N/A' }}</span></td>
-              <td class="px-6 py-4 text-sm"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Activo</span></td>
               <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button @click="abrirModalEditarModelo(mod)" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 class="w-4 h-4" /></button>
@@ -297,14 +420,99 @@ const tabs = [
       </div>
     </div>
 
-    <div v-else class="flex flex-col items-center justify-center py-20 px-4 bg-white border border-gray-200 border-dashed rounded-xl shadow-sm animate-fade-in">
-      <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-        <Wrench class="w-8 h-8 text-blue-500" />
+    <div v-else-if="activeTab === 'clientes'" class="space-y-4 animate-fade-in">
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-max">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+            <tr>
+              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Nombre</th>
+              <th class="px-6 py-4">RFC</th>
+              <th class="px-6 py-4">Contacto</th>
+              <th class="px-6 py-4">Teléfono</th>
+              <th class="px-6 py-4">Email</th>
+              <th class="px-6 py-4">Aeronaves</th>
+              <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="cli in clientes" :key="cli.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-gray-500 text-xs">{{ cli.id }}</td>
+              <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ cli.nombre }}</td>
+              <td class="px-6 py-4 text-gray-600 text-xs font-mono">{{ cli.rfc }}</td>
+              <td class="px-6 py-4 text-gray-600 text-sm">{{ cli.contacto }}</td>
+              <td class="px-6 py-4 text-gray-600 text-xs">{{ cli.telefono }}</td>
+              <td class="px-6 py-4 text-blue-600 text-xs hover:underline cursor-pointer">{{ cli.email }}</td>
+              <td class="px-6 py-4 text-gray-900 font-bold text-center">{{ cli.flota }}</td>
+              <td class="px-6 py-4"><span :class="`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(cli.estado)}`">{{ cli.estado }}</span></td>
+              <td class="px-6 py-4 text-right"><button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Editar</button></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <h3 class="text-xl font-bold text-gray-900 mb-2">Módulo en Construcción</h3>
-      <p class="text-gray-500 text-center max-w-md text-sm">
-        Esta sección se encuentra actualmente en fase de desarrollo. Pronto estará disponible con conexión al sistema central.
-      </p>
+    </div>
+
+    <div v-else-if="activeTab === 'modelos'" class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in">
+      <table class="w-full text-left border-collapse min-w-max">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <tr>
+            <th class="px-6 py-4">ID</th>
+            <th class="px-6 py-4">Modelo</th>
+            <th class="px-6 py-4">Fabricante</th>
+            <th class="px-6 py-4">Tipo</th>
+            <th class="px-6 py-4">Capacidad</th>
+            <th class="px-6 py-4">Motores</th>
+            <th class="px-6 py-4">Unidades en Flota</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr v-for="mod in modelos" :key="mod.id" class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-gray-500 text-xs">{{ mod.id }}</td>
+            <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ mod.modelo }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.fabricante }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.tipo }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.capacidad }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.motores }}</td>
+            <td class="px-6 py-4 text-gray-900 font-bold">{{ mod.flota }}</td>
+            <td class="px-6 py-4 text-right"><button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Editar</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-else class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in">
+       <table class="w-full text-left border-collapse min-w-max">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <tr>
+            <th class="px-6 py-4">ID Reporte</th>
+            <th class="px-6 py-4">Aeronave</th>
+            <th class="px-6 py-4">Tipo</th>
+            <th class="px-6 py-4">Descripción</th>
+            <th class="px-6 py-4">Fecha Programada</th>
+            <th class="px-6 py-4">Horas Límite</th>
+            <th class="px-6 py-4">Ciclos Límite</th>
+            <th class="px-6 py-4">Prioridad</th>
+            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr v-for="rep in reportes" :key="rep.id" class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-gray-500 text-sm">{{ rep.id }}</td>
+            <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ rep.aeronave }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ rep.tipo }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ rep.descripcion }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ rep.fechaProg }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ rep.horasLimite }}</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ rep.ciclosLimite }}</td>
+            <td class="px-6 py-4"><span :class="`px-2 py-0.5 rounded border text-xs font-medium ${getPriorityColor(rep.prioridad)}`">{{ rep.prioridad }}</span></td>
+            <td class="px-6 py-4"><span :class="`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rep.estado)}`">{{ rep.estado }}</span></td>
+            <td class="px-6 py-4 text-right"><button class="text-gray-900 hover:text-blue-600 font-bold text-sm">Ver</button></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <FormNuevoCliente

@@ -7,6 +7,7 @@ import type { PayloadNuevoArticuloBackend } from '../services/articulo.service'
 type CondicionTexto = 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
 
 interface ArticuloPreview {
+  noParte: string
   codigo: string
   noSerie: string
   descripcion: string
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const crearArticuloVacio = (): ArticuloPreview => ({
+  noParte: '',
   codigo: '',
   noSerie: '',
   descripcion: '',
@@ -68,6 +70,7 @@ const condicionTexto = (id: number): CondicionTexto | '-' => {
 
 const resetForm = () => {
   Object.assign(form, {
+    noParte: '',
     codigo: '',
     noSerie: '',
     descripcion: '',
@@ -97,6 +100,10 @@ watch(
 const close = () => emit('close')
 
 const validarFormulario = () => {
+  if (!form.noParte.trim()) {
+    alert('El No. parte es obligatorio.')
+    return false
+  }
   if (!form.codigo.trim()) {
     alert('El código es obligatorio.')
     return false
@@ -144,6 +151,7 @@ const agregarArticulo = () => {
   if (!validarFormulario()) return
 
   articulosAgregados.push({
+    noParte: form.noParte.trim(),
     codigo: form.codigo.trim(),
     noSerie: form.noSerie.trim(),
     descripcion: form.descripcion.trim(),
@@ -202,7 +210,16 @@ const guardarTodos = () => {
             <div class="bg-slate-100/70 rounded-2xl border border-slate-200 p-5">
               <h3 class="text-base font-semibold text-slate-900 mb-5">Datos del Artículo</h3>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-800 mb-2">No. Parte *</label>
+                  <input
+                    v-model="form.noParte"
+                    type="text"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Código *</label>
                   <input
@@ -231,7 +248,7 @@ const guardarTodos = () => {
                   />
                 </div>
 
-                <div class="md:col-span-3">
+                <div class="md:col-span-4">
                   <label class="block text-sm font-medium text-slate-800 mb-2">Descripción *</label>
                   <input
                     v-model="form.descripcion"
@@ -376,7 +393,12 @@ const guardarTodos = () => {
                   :key="`${articulo.codigo}-${index}`"
                   class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+                    <div>
+                      <p class="text-slate-500 text-xs">No. Parte:</p>
+                      <p class="text-sm font-semibold text-slate-900 mt-1">{{ articulo.noParte }}</p>
+                    </div>
+
                     <div>
                       <p class="text-slate-500 text-xs">Código:</p>
                       <p class="text-sm font-semibold text-slate-900 mt-1">{{ articulo.codigo }}</p>
