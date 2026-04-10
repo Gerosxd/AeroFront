@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { X } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { X, Download, Printer } from 'lucide-vue-next'
 import type { EntradaArticuloRegistroResponse } from '../types/entrada-articulo'
+import { descargarEntradaPdf, imprimirEntradaPdf } from '../services/entrada-articulo.service'
 
 const props = defineProps<{
   open: boolean
@@ -14,7 +15,43 @@ const emit = defineEmits<{
 
 const totalArticulos = computed(() => props.entrada?.detalles.length ?? 0)
 
+const descargandoPdf = ref(false)
+const imprimiendoPdf = ref(false)
+const errorPdf = ref('')
+
 const close = () => emit('close')
+
+const handleDescargarPdf = async () => {
+  if (!props.entrada?.idEntrada) return
+
+  errorPdf.value = ''
+  descargandoPdf.value = true
+
+  try {
+    await descargarEntradaPdf(props.entrada.idEntrada, props.entrada.folio)
+  } catch (error) {
+    console.error('Error al descargar PDF:', error)
+    errorPdf.value = 'No se pudo descargar el PDF de la entrada.'
+  } finally {
+    descargandoPdf.value = false
+  }
+}
+
+const handleImprimirPdf = async () => {
+  if (!props.entrada?.idEntrada) return
+
+  errorPdf.value = ''
+  imprimiendoPdf.value = true
+
+  try {
+    await imprimirEntradaPdf(props.entrada.idEntrada)
+  } catch (error) {
+    console.error('Error al imprimir PDF:', error)
+    errorPdf.value = 'No se pudo abrir el PDF para imprimir.'
+  } finally {
+    imprimiendoPdf.value = false
+  }
+}
 </script>
 
 <template>
@@ -23,7 +60,9 @@ const close = () => emit('close')
       <div class="absolute inset-0 bg-black/35 backdrop-blur-[1px]" @click="close"></div>
 
       <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+        <div
+          class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+        >
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
               <h2 class="text-xl font-semibold text-slate-900">Detalle de Entrada</h2>
@@ -109,9 +148,36 @@ const close = () => emit('close')
                 </table>
               </div>
             </div>
+
+            <div
+              v-if="errorPdf"
+              class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {{ errorPdf }}
+            </div>
           </div>
 
-          <div class="flex justify-end px-6 py-4 border-t border-slate-200 bg-white">
+          <div class="flex flex-wrap justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-white">
+            <button
+              type="button"
+              @click="handleImprimirPdf"
+              :disabled="imprimiendoPdf || descargandoPdf"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm font-medium hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Printer class="w-4 h-4" />
+              {{ imprimiendoPdf ? 'Abriendo PDF...' : 'Imprimir' }}
+            </button>
+
+            <button
+              type="button"
+              @click="handleDescargarPdf"
+              :disabled="descargandoPdf || imprimiendoPdf"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Download class="w-4 h-4" />
+              {{ descargandoPdf ? 'Descargando...' : 'Descargar PDF' }}
+            </button>
+
             <button
               type="button"
               @click="close"
