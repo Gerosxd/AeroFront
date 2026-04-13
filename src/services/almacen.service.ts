@@ -22,3 +22,7 @@ export const actualizarAlmacen = async (id: number, almacen: Almacen): Promise<A
   const { data } = await http.put(`/api/almacenes/${id}`, almacen);
   return data;
 };
+
+export const eliminarAlmacen = async (id: number): Promise<void> => {
+  await http.delete(`/api/almacenes/${id}`);
+};
