@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { Plus, Search, Filter, PackageOpen } from 'lucide-vue-next';
 import FormNuevoAlmacen from '../components/FormNuevoAlmacen.vue';
-import { obtenerAlmacenes, crearAlmacen, actualizarAlmacen, type Almacen } from '../services/almacen.service';
+import { obtenerAlmacenes, crearAlmacen, actualizarAlmacen, eliminarAlmacen, type Almacen } from '../services/almacen.service';
 
 const activeTab = ref('General');
 const tabs = ['General'];
@@ -39,6 +39,20 @@ const abrirModalCrear = () => {
 const abrirModalEditar = (almacen: Almacen) => {
   almacenSeleccionado.value = { ...almacen }; 
   mostrarModal.value = true;
+};
+
+const eliminarAlmacenLocal = async (almacen: Almacen) => {
+  const mensajeConfirmacion = `¿Estás seguro de que deseas eliminar este almacén?\n\nDatos del registro a eliminar:\n- Nombre: ${almacen.nombre}\n- Ciudad: ${almacen.ciudad}\n- Dirección: ${almacen.direccion}\n\nEsta acción no se puede deshacer.`;
+  
+  if (confirm(mensajeConfirmacion)) {
+    try {
+      await eliminarAlmacen(almacen.idAlmacen!);
+      almacenes.value = await obtenerAlmacenes();
+    } catch (error) {
+      console.error("Error al eliminar el almacén:", error);
+      alert("Hubo un error al eliminar el almacén.");
+    }
+  }
 };
 
 const guardarAlmacen = async (datosFormulario: any) => {
@@ -111,7 +125,10 @@ const guardarAlmacen = async (datosFormulario: any) => {
                   </span>
                 </td>
                 <td class="px-6 py-4 text-center">
-                  <button @click="abrirModalEditar(alm)" class="text-gray-400 hover:text-blue-600 font-medium text-sm">Editar</button>
+                  <div class="flex items-center justify-center gap-3">
+                    <button @click="abrirModalEditar(alm)" class="text-gray-400 hover:text-blue-600 font-medium text-sm transition-colors">Editar</button>
+                    <button @click="eliminarAlmacenLocal(alm)" class="text-gray-400 hover:text-red-600 font-medium text-sm transition-colors">Eliminar</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
