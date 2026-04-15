@@ -49,6 +49,7 @@ const crearDetalleVacio = (): EntradaArticuloDetalleRequest => ({
   cantidad: 1,
   ubicacion: '',
   precioCompra: 0,
+  moneda: 'MXN',
   condicion: 0
 })
 
@@ -166,6 +167,7 @@ const agregarDetalle = () => {
     cantidad: Number(formDetalle.cantidad),
     ubicacion: formDetalle.ubicacion.trim(),
     precioCompra: Number(formDetalle.precioCompra),
+    moneda: formDetalle.moneda,
     condicion: Number(formDetalle.condicion)
   })
 

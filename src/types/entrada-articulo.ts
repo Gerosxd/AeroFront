@@ -7,6 +7,7 @@ export interface EntradaArticuloDetalleRequest {
   cantidad: number
   ubicacion: string
   precioCompra: number
+  moneda: number
   condicion: number
 }
 

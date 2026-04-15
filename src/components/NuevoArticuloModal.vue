@@ -83,6 +83,7 @@ const resetForm = () => {
     ubicacion: '',
     proveedor: 0,
     precioCompra: 0,
+    moneda: 'MXN',
     condicion: props.catalogos.condiciones[0]?.id ?? 0,
   })
 }
@@ -164,6 +165,7 @@ const agregarArticulo = () => {
     ubicacion: form.ubicacion.trim(),
     proveedor: Number(form.proveedor),
     precioCompra: Number(form.precioCompra),
+    moneda: form.moneda,
     condicion: Number(form.condicion),
   })
 
