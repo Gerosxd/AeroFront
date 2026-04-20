@@ -181,12 +181,15 @@ const eliminarDetalle = (index: number) => {
 const guardarEntrada = () => {
   if (!validarEntrada()) return
 
+  const idResponsableSistema = props.usuarioId && props.usuarioId !== 0 ? Number(props.usuarioId) : 1;
+
   emit('submit', {
-    usuario: Number(props.usuarioId),
+    usuario: idResponsableSistema,
     proveedor: Number(formEntrada.proveedor),
     almacenDestino: Number(formEntrada.almacenDestino),
     estadoEntrada: Number(formEntrada.estadoEntrada),
     observaciones: formEntrada.observaciones.trim(),
+    recibidoPor: formEntrada.recibidoPor,
     detalles: [...detalles.value]
   })
   alert('¡Registro exitoso! La entrada se ha guardado correctamente.')
@@ -248,10 +251,10 @@ const close = () => emit('close')
                 <div>
                   <label class="block text-sm font-medium text-slate-800 mb-2">Recibido por</label>
                   <input
-                    type="text"
-                    :value="nombreUsuario"
-
-                    class="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-500"
+                      type="text"
+                      v-model="formEntrada.recibidoPor"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nombre de quien recibe"
                   />
                 </div>
 

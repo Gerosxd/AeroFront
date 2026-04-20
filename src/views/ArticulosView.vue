@@ -541,15 +541,16 @@ onMounted(async () => {
     </div>
 
     <NuevaEntradaArticuloModal
-      :open="showNuevaEntrada"
+        v-if="showNuevaEntrada"
+        :open="showNuevaEntrada"
       :categorias="catalogos.categorias"
       :unidades="catalogos.unidades"
       :proveedores="catalogos.proveedores"
       :almacenes="catalogos.almacenes"
       :condiciones="catalogos.condiciones"
       :estadosEntrada="estadosEntrada"
-      :usuarioId="1"
-      nombreUsuario="Carlos Ramírez"
+      :usuario-id="userStore?.id || 0"
+      :nombre-usuario="userStore?.nombre || ''"
       @close="showNuevaEntrada = false"
       @submit="guardarNuevaEntrada"
     />
