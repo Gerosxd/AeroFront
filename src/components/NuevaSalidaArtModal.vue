@@ -274,8 +274,8 @@ const generarSalida = async () => {
     }
 
     await http.post('/api/salidas', payload)
-
     emit('created', payload)
+    resetAll()
     close()
   } catch (error) {
     console.error('Error al generar salida', error)

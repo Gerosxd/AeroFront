@@ -25,6 +25,8 @@ import type {
   EntradaArticuloListadoResponse
 } from '../types/entrada-articulo'
 
+import { listarSalidas } from '../services/salida.service'
+
 interface ArticuloTabla {
   id: string
   noParte: string
@@ -211,18 +213,33 @@ const guardarNuevaEntrada = async (payload: EntradaArticuloRegistroRequest) => {
   }
 }
 
-const registrarSalidaCreada = (payload: PayloadNuevaSalidaArt) => {
-  salidas.value.unshift({
-    id: payload.noSalida || makeId(),
-    fecha: payload.fecha,
-    noSalida: payload.noSalida,
-    destinatario: payload.destinatario,
-    direccion: payload.direccionDestinatario,
-    articulos: payload.detalles.length,
-    estado: 'Pendiente'
-  })
+const registrarSalidaCreada = async () => {
+  await Promise.all([
+    cargarSalidas(),
+    cargarArticulos() // Mantiene el stock sincronizado
+  ])
   showNuevaSalida.value = false
 }
+
+const cargarSalidas = async () => {
+  try {
+    const data = await listarSalidas()
+
+    // Mapeamos los datos para que coincidan con la interfaz 'Salida' de tu tabla
+    salidas.value = data.map((s: any) => ({
+      id: String(s.idSalida || s.id),
+      fecha: s.fecha,
+      noSalida: s.noSalida,
+      destinatario: s.destinatario,
+      direccion: s.direccionDestinatario, // Importante: el back manda direccionDestinatario
+      articulos: s.totalArticulos || (s.detalles ? s.detalles.length : 0),
+      estado: s.estado || 'Completado'
+    }))
+  } catch (error) {
+    console.error('Error al cargar salidas:', error)
+  }
+}
+
 const verDetalleEntrada = async (idEntrada: number) => {
   try {
     loadingDetalle.value = true
@@ -271,9 +288,12 @@ onMounted(async () => {
   await cargarCatalogos()
   await Promise.all([
     cargarArticulos(),
-    cargarEntradas()
+    cargarEntradas(),
+    cargarSalidas()
   ])
 })
+
+
 </script>
 
 <template>
