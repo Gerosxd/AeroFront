@@ -24,8 +24,11 @@ import type {
   EntradaArticuloRegistroResponse,
   EntradaArticuloListadoResponse
 } from '../types/entrada-articulo'
+import DetalleSalidaArtModal from '../components/DetalleSalidaArtModal.vue'
 
-import { listarSalidas } from '../services/salida.service'
+// En ArticulosView.vue
+import { listarSalidas, obtenerSalidaPorId } from '../services/salida.service' // <--- ASEGÚRATE DE AGREGAR 'obtenerSalidaPorId' AQUÍ
+
 
 interface ArticuloTabla {
   id: string
@@ -73,7 +76,9 @@ const showNuevaSalida = ref(false)
 const activeTab = ref<'listado' | 'entradas' | 'salidas'>('listado')
 const showNuevaEntrada = ref(false)
 const showDetalleEntrada = ref(false)
-
+const showDetalleSalida = ref(false)
+const salidaSeleccionada = ref(null)
+const loadingSalida = ref(false)
 
 const articulos = ref<ArticuloTabla[]>([])
 const entradas = ref<EntradaArticuloListadoResponse[]>([])
@@ -237,6 +242,29 @@ const cargarSalidas = async () => {
     }))
   } catch (error) {
     console.error('Error al cargar salidas:', error)
+  }
+}
+
+const verDetalleSalida = async (idSalida: number | string) => {
+  console.log("Intentando abrir salida:", idSalida); // ¿Aparece esto?
+
+  if (!idSalida) {
+    console.error("ID de salida no encontrado en el objeto");
+    return;
+  }
+
+  try {
+    loadingSalida.value = true;
+    const data = await obtenerSalidaPorId(idSalida);
+    console.log("Datos recibidos del servidor:", data);
+
+    salidaSeleccionada.value = data;
+    showDetalleSalida.value = true; // Esta línea es la que "prende" el modal
+  } catch (error) {
+    console.error("Error al cargar detalle:", error);
+    alert("Error al conectar con el servidor");
+  } finally {
+    loadingSalida.value = false;
   }
 }
 
@@ -456,6 +484,7 @@ onMounted(async () => {
             <th class="px-6 py-4">Dirección</th>
             <th class="px-6 py-4">Artículos</th>
             <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4">Acciones</th>
           </tr>
           </thead>
 
@@ -468,13 +497,11 @@ onMounted(async () => {
             <td class="px-6 py-4 text-sm">{{ salida.destinatario }}</td>
             <td class="px-6 py-4 text-sm">{{ salida.direccion }}</td>
             <td class="px-6 py-4 text-sm">{{ salida.articulos }}</td>
-
-            <td class="px-6 py-4">
-    <span
-        :class="`px-2 py-1 rounded-full text-xs font-semibold ${getEntryStatusStyle(salida.estado)}`"
-    >
-    {{ salida.estado }}
-    </span>
+            <td class="px-6 py-4"> <span :class="`px-2 py-1 rounded-full text-xs font-semibold ${getEntryStatusStyle(salida.estado)}`"> {{ salida.estado }} </span></td>
+            <td class="px-6 py-4 text-sm font-medium">
+              <button @click="verDetalleSalida(salida.id)" class="text-slate-900 hover:text-blue-600">
+                {{ loadingSalida ? 'Cargando...' : 'Ver' }}
+              </button>
             </td>
           </tr>
           </tbody>
@@ -587,6 +614,12 @@ onMounted(async () => {
       :entrada="entradaSeleccionada"
       @close="showNuevaSalida = false"
       @created="registrarSalidaCreada"
+    />
+
+    <DetalleSalidaArtModal
+        :open="showDetalleSalida"
+        :salida="salidaSeleccionada"
+        @close="showDetalleSalida = false"
     />
   </div>
 

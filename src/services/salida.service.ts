@@ -1,6 +1,42 @@
 import http from '../api/http'
 
+import type {
+    SalidaArticuloExportRequest
+} from '../types/salida-articulo'
+
 export const listarSalidas = async () => {
     const { data } = await http.get('/api/salidas')
     return data
+}
+
+export const obtenerSalidaPorId = async (idSalida: number | string) => {
+    const { data } = await http.get(`/api/salidas/${idSalida}`)
+    return data
+}
+
+export const exportarSalidaExcel = async (idSalida: number, payload: SalidaArticuloExportRequest, noSalida?: string): Promise<void> => {
+    const { data } = await http.post(`/api/salidas/${idSalida}/exportar-excel`, payload, {
+        responseType: 'blob'
+    })
+    descargarArchivo(data, `${noSalida || idSalida}.xlsx`) [cite, 1648]
+}
+
+// Función para Exportar PDF
+export const exportarSalidaPdf = async (idSalida: number, payload: SalidaArticuloExportRequest, noSalida?: string): Promise<void> => {
+    const { data } = await http.post(`/api/salidas/${idSalida}/exportar-pdf`, payload, {
+        responseType: 'blob'
+    })
+    descargarArchivo(data, `${noSalida || idSalida}.pdf`) [cite, 1881]
+}
+
+// Utilidad interna para la descarga
+const descargarArchivo = (blob: Blob, nombre: string) => {
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = nombre
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url) [cite, 1881]
 }
