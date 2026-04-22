@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { X, Download, Printer } from 'lucide-vue-next'
-import type { EntradaArticuloRegistroResponse } from '../types/entrada-articulo'
-import { descargarEntradaPdf, imprimirEntradaPdf } from '../services/entrada-articulo.service'
+import { X, Download, FileText } from 'lucide-vue-next'
+import type {
+  EntradaArticuloRegistroResponse,
+  EntradaArticuloExportRequest
+} from '../types/entrada-articulo'
+import { exportarEntradaExcel, exportarEntradaPdf } from '../services/entrada-articulo.service'
+import ExportarEntradaModal from './ExportarEntradaModal.vue'
 
 const props = defineProps<{
   open: boolean
@@ -15,41 +19,42 @@ const emit = defineEmits<{
 
 const totalArticulos = computed(() => props.entrada?.detalles.length ?? 0)
 
-const descargandoPdf = ref(false)
-const imprimiendoPdf = ref(false)
-const errorPdf = ref('')
+const openExportModal = ref(false)
+const tipoExportacion = ref<'excel' | 'pdf'>('excel')
+const exportando = ref(false)
+const errorExport = ref('')
 
 const close = () => emit('close')
 
-const handleDescargarPdf = async () => {
-  if (!props.entrada?.idEntrada) return
-
-  errorPdf.value = ''
-  descargandoPdf.value = true
-
-  try {
-    await descargarEntradaPdf(props.entrada.idEntrada, props.entrada.folio)
-  } catch (error) {
-    console.error('Error al descargar PDF:', error)
-    errorPdf.value = 'No se pudo descargar el PDF de la entrada.'
-  } finally {
-    descargandoPdf.value = false
-  }
+const abrirExportacion = (tipo: 'excel' | 'pdf') => {
+  tipoExportacion.value = tipo
+  errorExport.value = ''
+  openExportModal.value = true
 }
 
-const handleImprimirPdf = async () => {
+const cerrarExportacion = () => {
+  openExportModal.value = false
+}
+
+const confirmarExportacion = async (payload: EntradaArticuloExportRequest) => {
   if (!props.entrada?.idEntrada) return
 
-  errorPdf.value = ''
-  imprimiendoPdf.value = true
+  exportando.value = true
+  errorExport.value = ''
 
   try {
-    await imprimirEntradaPdf(props.entrada.idEntrada)
+    if (tipoExportacion.value === 'excel') {
+      await exportarEntradaExcel(props.entrada.idEntrada, payload, props.entrada.folio)
+    } else {
+      await exportarEntradaPdf(props.entrada.idEntrada, payload, props.entrada.folio)
+    }
+
+    openExportModal.value = false
   } catch (error) {
-    console.error('Error al imprimir PDF:', error)
-    errorPdf.value = 'No se pudo abrir el PDF para imprimir.'
+    console.error('Error al exportar:', error)
+    errorExport.value = `No se pudo exportar la entrada en ${tipoExportacion.value.toUpperCase()}.`
   } finally {
-    imprimiendoPdf.value = false
+    exportando.value = false
   }
 }
 </script>
@@ -60,9 +65,7 @@ const handleImprimirPdf = async () => {
       <div class="absolute inset-0 bg-black/35 backdrop-blur-[1px]" @click="close"></div>
 
       <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div
-          class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
-        >
+        <div class="w-full max-w-6xl max-h-[94vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
           <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
               <h2 class="text-xl font-semibold text-slate-900">Detalle de Entrada</h2>
@@ -150,32 +153,30 @@ const handleImprimirPdf = async () => {
             </div>
 
             <div
-              v-if="errorPdf"
+              v-if="errorExport"
               class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             >
-              {{ errorPdf }}
+              {{ errorExport }}
             </div>
           </div>
 
           <div class="flex flex-wrap justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-white">
             <button
               type="button"
-              @click="handleImprimirPdf"
-              :disabled="imprimiendoPdf || descargandoPdf"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm font-medium hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              @click="abrirExportacion('pdf')"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700"
             >
-              <Printer class="w-4 h-4" />
-              {{ imprimiendoPdf ? 'Abriendo PDF...' : 'Imprimir' }}
+              <FileText class="w-4 h-4" />
+              Exportar PDF
             </button>
 
             <button
               type="button"
-              @click="handleDescargarPdf"
-              :disabled="descargandoPdf || imprimiendoPdf"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              @click="abrirExportacion('excel')"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
             >
               <Download class="w-4 h-4" />
-              {{ descargandoPdf ? 'Descargando...' : 'Descargar PDF' }}
+              Exportar Excel
             </button>
 
             <button
@@ -190,4 +191,13 @@ const handleImprimirPdf = async () => {
       </div>
     </div>
   </teleport>
+
+  <ExportarEntradaModal
+    :open="openExportModal"
+    :entrada="entrada"
+    :tipo="tipoExportacion"
+    :loading="exportando"
+    @close="cerrarExportacion"
+    @confirm="confirmarExportacion"
+  />
 </template>

@@ -50,3 +50,12 @@ export interface EntradaArticuloListadoResponse {
   estado: string
   totalArticulos: number
 }
+
+export interface EntradaArticuloExportRequest {
+  encargadoAlmacen: string
+  fechaEncargado: string
+  traslada: string
+  fechaTraslada: string
+  recibe: string
+  fechaRecibe: string
+}
