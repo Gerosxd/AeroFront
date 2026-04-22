@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { X, Printer, FileDown } from 'lucide-vue-next'
-import { exportarSalidaExcel, exportarSalidaPdf } from '../services/salida-articulo.service'
-
+import { exportarSalidaExcel, exportarSalidaPdf } from '../services/salida.service'
 
 const openExportModal = ref(false)
 const tipoExportacion = ref<'excel' | 'pdf'>('excel')
@@ -11,7 +10,6 @@ const abrirExportacion = (tipo: 'excel' | 'pdf') => {
   tipoExportacion.value = tipo
   openExportModal.value = true [cite, 1897]
 }
-
 
 
 const props = defineProps<{
