@@ -76,8 +76,10 @@ const handleGuardarCliente = async (datos: PayloadClienteBackend & { esEdicion?:
   try {
     if (datos.esEdicion && datos.idCliente) {
       await actualizarCliente(datos.idCliente, datos);
+      alert("El cliente ha sido actualizado correctamente.");
     } else {
       await guardarCliente(datos);
+      alert("El cliente ha sido registrado correctamente.");
     }
     await cargarClientes();
     mostrarModalCliente.value = false;
@@ -137,8 +139,10 @@ const handleGuardarModelo = async (datos: PayloadModeloBackend & { esEdicion?: b
   try {
     if (datos.esEdicion && datos.idModelo) {
       await actualizarModelo(datos.idModelo, datos);
+      alert("El modelo de aeronave ha sido actualizado correctamente.");
     } else {
       await guardarModelo(datos);
+      alert("El modelo de aeronave ha sido registrado correctamente.");
     }
     await cargarModelos();
     mostrarModalModelo.value = false;
@@ -223,11 +227,18 @@ type AeronaveLocal = {
 
 const aeronaves = ref<AeronaveLocal[]>([])
 
-const catalogos = {
-  marcas: [],
-  tipos: [],
-  modelos: []
-}
+const catalogos = computed(() => {
+  return {
+    marcas: [],
+    tipos: [],
+    modelos: modelosAPI.value.map(m => ({
+      id: m.idModelo || 0,
+      nombre: m.modelo,
+      marca: m.marca,
+      tipo: m.tipoAeronave ? String(m.tipoAeronave) : 'N/A'
+    }))
+  };
+});
 
 // ==========================================
 // 4. NUEVO: LÓGICA DE OTs
