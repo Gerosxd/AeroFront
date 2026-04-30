@@ -1,5 +1,4 @@
 import http from '../api/http'
-
 import type {
     SalidaArticuloExportRequest
 } from '../types/salida-articulo'
@@ -18,18 +17,16 @@ export const exportarSalidaExcel = async (idSalida: number, payload: SalidaArtic
     const { data } = await http.post(`/api/salidas/${idSalida}/exportar-excel`, payload, {
         responseType: 'blob'
     })
-    descargarArchivo(data, `${noSalida || idSalida}.xlsx`) [cite, 1648]
+    descargarArchivo(data, `${noSalida || idSalida}.xlsx`)
 }
 
-// Función para Exportar PDF
 export const exportarSalidaPdf = async (idSalida: number, payload: SalidaArticuloExportRequest, noSalida?: string): Promise<void> => {
     const { data } = await http.post(`/api/salidas/${idSalida}/exportar-pdf`, payload, {
         responseType: 'blob'
     })
-    descargarArchivo(data, `${noSalida || idSalida}.pdf`) [cite, 1881]
+    descargarArchivo(data, `${noSalida || idSalida}.pdf`)
 }
 
-// Utilidad interna para la descarga
 const descargarArchivo = (blob: Blob, nombre: string) => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -38,5 +35,5 @@ const descargarArchivo = (blob: Blob, nombre: string) => {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    window.URL.revokeObjectURL(url) [cite, 1881]
+    window.URL.revokeObjectURL(url)
 }

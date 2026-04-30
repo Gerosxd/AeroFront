@@ -2,6 +2,14 @@
 import { ref } from 'vue'
 import { X, Printer, FileDown } from 'lucide-vue-next'
 import { exportarSalidaExcel, exportarSalidaPdf } from '../services/salida.service'
+import ExportarSalidaModal from './ExportarSalidaModal.vue'
+
+const props = defineProps<{
+  open: boolean
+  salida: any
+}>()
+
+const emit = defineEmits(['close'])
 
 const openExportModal = ref(false)
 const tipoExportacion = ref<'excel' | 'pdf'>('excel')
@@ -9,22 +17,30 @@ const exportando = ref(false)
 
 const abrirExportacion = (tipo: 'excel' | 'pdf') => {
   tipoExportacion.value = tipo
-  openExportModal.value = true [cite, 1897]
+  openExportModal.value = true
 }
 
-
-const props = defineProps<{
-  open: boolean
-  salida: any
-}>()
-
-
-
-const emit = defineEmits(['close'])
+const confirmarExportacion = async (payload: any) => {
+  if (!props.salida?.idSalida) return
+  exportando.value = true
+  try {
+    if (tipoExportacion.value === 'excel') {
+      await exportarSalidaExcel(props.salida.idSalida, payload, props.salida.noSalida)
+    } else {
+      await exportarSalidaPdf(props.salida.idSalida, payload, props.salida.noSalida)
+    }
+    openExportModal.value = false
+  } catch (error) {
+    console.error("Error al exportar:", error)
+  } finally {
+    exportando.value = false
+  }
+}
 </script>
 
 <template>
   <teleport to="body">
+    <!-- Modal de Detalle Principal -->
     <div v-if="open" class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/35 backdrop-blur-[1px]" @click="emit('close')"></div>
 
@@ -66,28 +82,33 @@ const emit = defineEmits(['close'])
                 <td class="px-4 py-3 text-sm text-center font-bold text-slate-900">{{ item.cantidad }}</td>
                 <td class="px-4 py-3 text-sm italic text-slate-400">{{ item.observaciones || '-' }}</td>
               </tr>
-              <tr v-if="!salida?.articulos?.length">
-                <td colspan="4" class="px-4 py-8 text-center text-sm text-slate-500">
-                  No hay artículos registrados en esta salida.
-                </td>
-              </tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <div class="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
-          <button @click="abrirExportacion('pdf')" class="...">
-            Exportar PDF
+          <button @click="abrirExportacion('pdf')" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-colors flex items-center gap-2">
+            <Printer class="w-4 h-4"/> Exportar PDF
           </button>
-          <button @click="abrirExportacion('excel')" class="...">
-            Exportar Excel
-          </button> [cite: 1914, 1916]
+          <button @click="abrirExportacion('excel')" class="px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-bold hover:bg-green-800 transition-colors flex items-center gap-2">
+            <FileDown class="w-4 h-4"/> Exportar Excel
+          </button>
           <button @click="emit('close')" class="px-4 py-2 border border-slate-300 bg-white rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
             Cerrar
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Modal de Firmas Secundario -->
+    <ExportarSalidaModal
+        :open="openExportModal"
+        :salida="salida"
+        :tipo="tipoExportacion"
+        :loading="exportando"
+        @close="openExportModal = false"
+        @confirm="confirmarExportacion"
+    />
   </teleport>
 </template>
