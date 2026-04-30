@@ -18,6 +18,7 @@ const emit = defineEmits<{
   (e: 'confirm', payload: EntradaArticuloExportRequest): void
 }>()
 
+// Helper para obtener la fecha actual
 const hoy = computed(() => {
   const d = new Date()
   const yyyy = d.getFullYear()
@@ -26,6 +27,7 @@ const hoy = computed(() => {
   return `${yyyy}-${mm}-${dd}`
 })
 
+// Estado del formulario reactivo
 const form = reactive<EntradaArticuloExportRequest>({
   encargadoAlmacen: '',
   fechaEncargado: '',
@@ -35,18 +37,22 @@ const form = reactive<EntradaArticuloExportRequest>({
   fechaRecibe: ''
 })
 
+// Jalar datos automáticamente al abrir el modal
 watch(
-  () => props.open,
-  (open) => {
-    if (!open) return
+    () => props.open,
+    (open) => {
+      if (!open) return
 
-    form.encargadoAlmacen = ''
-    form.fechaEncargado = hoy.value
-    form.traslada = ''
-    form.fechaTraslada = hoy.value
-    form.recibe = ''
-    form.fechaRecibe = hoy.value
-  }
+      // Jalamos los nombres si existen en el objeto entrada, si no, vacío
+      form.encargadoAlmacen = props.entrada?.encargadoAlmacen || ''
+      form.fechaEncargado = hoy.value
+
+      form.traslada = props.entrada?.traslada || ''
+      form.fechaTraslada = hoy.value
+
+      form.recibe = props.entrada?.recibe || ''
+      form.fechaRecibe = hoy.value
+    }
 )
 
 const close = () => emit('close')
@@ -59,101 +65,111 @@ const submit = () => {
 <template>
   <teleport to="body">
     <div v-if="open" class="fixed inset-0 z-[10000]">
-      <div class="absolute inset-0 bg-black/40" @click="close"></div>
+      <!-- Overlay con desenfoque (Idéntico al de Salidas) -->
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-[2px]" @click="close"></div>
 
       <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-          <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200">
+        <!-- Contenedor con scroll por si la pantalla es pequeña -->
+        <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-200">
+
+          <!-- Header (Estilo Salidas) -->
+          <div class="sticky top-0 z-10 flex items-start justify-between px-6 py-5 border-b border-slate-200 bg-white">
             <div>
-              <h3 class="text-lg font-semibold text-slate-900">
-                {{ tipo === 'excel' ? 'Exportar Excel' : 'Exportar PDF' }}
+              <h3 class="text-lg font-bold text-slate-900">
+                {{ tipo === 'excel' ? 'Exportar a Excel' : 'Exportar a PDF' }}
               </h3>
               <p class="text-sm text-slate-500 mt-1">
-                Captura los datos de firmas para {{ entrada?.folio || 'la entrada' }}
+                Captura los datos de responsables para la entrada: <span class="font-semibold text-blue-600">{{ entrada?.folio }}</span>
               </p>
             </div>
 
             <button
-              class="p-2 rounded-lg hover:bg-slate-100 text-slate-700"
-              @click="close"
-              aria-label="Cerrar"
+                class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+                @click="close"
             >
               <X class="w-5 h-5" />
             </button>
           </div>
 
-          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700 mb-1">Encargado de almacén</label>
+          <!-- Body - Grid de 2 columnas -->
+          <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 bg-white">
+
+            <!-- Bloque Encargado -->
+            <div class="md:col-span-1">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Encargado de Almacén</label>
               <input
-                v-model="form.encargadoAlmacen"
-                type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.encargadoAlmacen"
+                  type="text"
+                  placeholder="Nombre completo"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               />
             </div>
-
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Fecha encargado</label>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Firma</label>
               <input
-                v-model="form.fechaEncargado"
-                type="date"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.fechaEncargado"
+                  type="date"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700 mb-1">Traslada</label>
+            <!-- Bloque Traslada -->
+            <div class="md:col-span-1">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Persona que Traslada</label>
               <input
-                v-model="form.traslada"
-                type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.traslada"
+                  type="text"
+                  placeholder="Nombre completo"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               />
             </div>
-
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Fecha traslada</label>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Firma</label>
               <input
-                v-model="form.fechaTraslada"
-                type="date"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.fechaTraslada"
+                  type="date"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
-            <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-slate-700 mb-1">Recibe</label>
+            <!-- Bloque Recibe -->
+            <div class="md:col-span-1">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Persona que Recibe</label>
               <input
-                v-model="form.recibe"
-                type="text"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.recibe"
+                  type="text"
+                  placeholder="Nombre completo"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               />
             </div>
-
             <div>
-              <label class="block text-sm font-medium text-slate-700 mb-1">Fecha recibe</label>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha Firma</label>
               <input
-                v-model="form.fechaRecibe"
-                type="date"
-                class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  v-model="form.fechaRecibe"
+                  type="date"
+                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-white">
+          <!-- Footer (Sticky al fondo) -->
+          <div class="sticky bottom-0 flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
             <button
-              type="button"
-              @click="close"
-              class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm font-medium hover:bg-slate-50"
+                type="button"
+                @click="close"
+                class="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all"
             >
               Cancelar
             </button>
 
             <button
-              type="button"
-              @click="submit"
-              :disabled="loading"
-              class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+                type="button"
+                @click="submit"
+                :disabled="loading"
+                class="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-all flex items-center gap-2 shadow-lg shadow-blue-200"
             >
-              {{ loading ? 'Exportando...' : (tipo === 'excel' ? 'Exportar Excel' : 'Exportar PDF') }}
+              <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              {{ loading ? 'Generando archivo...' : (tipo === 'excel' ? 'Descargar Excel' : 'Descargar PDF') }}
             </button>
           </div>
         </div>

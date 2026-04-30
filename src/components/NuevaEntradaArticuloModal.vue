@@ -434,6 +434,8 @@ const close = () => emit('close')
                 Componente / Parte Agregados ({{ totalArticulos }})
               </h3>
 
+              <div class="overflow-y-auto max-h-[400px] pr-2 space-y-3">
+
               <div
                 v-if="detalles.length === 0"
                 class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-500 text-sm"
@@ -510,6 +512,7 @@ const close = () => emit('close')
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
