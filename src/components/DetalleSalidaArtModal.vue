@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { X, Printer, FileDown } from 'lucide-vue-next'
 import { exportarSalidaExcel, exportarSalidaPdf } from '../services/salida.service'
 
