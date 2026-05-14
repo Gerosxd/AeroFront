@@ -1,28 +1,35 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import {
-  Plus, Search, Building2, Edit2, Trash2
-} from 'lucide-vue-next';
-import NuevaAeronaveModal, { type PayloadNuevaAeronave } from '../components/NuevaAeronaveModal.vue'
-import { guardarAeronave } from '../services/aeronave.service'
-import CrearOTForm from '../components/CrearOTForm.vue'
+import { ref, computed, onMounted } from "vue";
+import { Plus, Search, Building2, Edit2, Trash2 } from "lucide-vue-next";
+import NuevaAeronaveModal, {
+  type PayloadNuevaAeronave,
+} from "../components/NuevaAeronaveModal.vue";
+import { guardarAeronave, listarAeronaves } from '../services/aeronave.service'
+import CrearOTForm from "../components/CrearOTForm.vue";
 
 // NUEVO: OT
-import otService from '../services/ot.service'
-import type { OTListado } from '../types/ot'
+import otService from "../services/ot.service";
+import type { OTListado } from "../types/ot";
 
 // --- IMPORTACIONES DE CLIENTES ---
-import FormNuevoCliente from '../components/FormNuevoCliente.vue';
+import FormNuevoCliente from "../components/FormNuevoCliente.vue";
 import {
-  guardarCliente, listarClientes, actualizarCliente, eliminarClienteService, type PayloadClienteBackend,
-} from '../services/cliente.service';
+  guardarCliente,
+  listarClientes,
+  actualizarCliente,
+  eliminarClienteService,
+  type PayloadClienteBackend,
+} from "../services/cliente.service";
 
 // --- IMPORTACIONES DE MODELOS ---
-import FormNuevoModelo from '../components/FormNuevoModelo.vue';
+import FormNuevoModelo from "../components/FormNuevoModelo.vue";
 import {
-  guardarModelo, listarModelos, actualizarModelo, eliminarModeloService, type PayloadModeloBackend
-} from '../services/modelo.service';
-
+  guardarModelo,
+  listarModelos,
+  actualizarModelo,
+  eliminarModeloService,
+  type PayloadModeloBackend,
+} from "../services/modelo.service";
 
 // ==========================================
 // 1. LÓGICA DE CLIENTES
@@ -72,7 +79,9 @@ const eliminarClienteLocal = async (idCliente: number) => {
   }
 };
 
-const handleGuardarCliente = async (datos: PayloadClienteBackend & { esEdicion?: boolean }) => {
+const handleGuardarCliente = async (
+  datos: PayloadClienteBackend & { esEdicion?: boolean },
+) => {
   try {
     if (datos.esEdicion && datos.idCliente) {
       await actualizarCliente(datos.idCliente, datos);
@@ -87,7 +96,6 @@ const handleGuardarCliente = async (datos: PayloadClienteBackend & { esEdicion?:
     alert("Hubo un error al guardar el cliente.");
   }
 };
-
 
 // ==========================================
 // 2. LÓGICA DE MODELOS DE AERONAVES
@@ -108,9 +116,10 @@ const cargarModelos = async () => {
 const modelosFiltrados = computed(() => {
   if (!searchQueryModelos.value) return modelosAPI.value;
   const query = searchQueryModelos.value.toLowerCase();
-  return modelosAPI.value.filter(m =>
-    m.modelo?.toLowerCase().includes(query) ||
-    m.marca?.toLowerCase().includes(query)
+  return modelosAPI.value.filter(
+    (m) =>
+      m.modelo?.toLowerCase().includes(query) ||
+      m.marca?.toLowerCase().includes(query),
   );
 });
 
@@ -133,9 +142,11 @@ const eliminarModeloLocal = async (id: number) => {
       alert("Error al eliminar el modelo.");
     }
   }
-}
+};
 
-const handleGuardarModelo = async (datos: PayloadModeloBackend & { esEdicion?: boolean }) => {
+const handleGuardarModelo = async (
+  datos: PayloadModeloBackend & { esEdicion?: boolean },
+) => {
   try {
     if (datos.esEdicion && datos.idModelo) {
       await actualizarModelo(datos.idModelo, datos);
@@ -159,22 +170,37 @@ const handleGuardarModelo = async (datos: PayloadModeloBackend & { esEdicion?: b
 // 3. LÓGICA DE AERONAVES
 // ==========================================
 // Se deja como estaba originalmente, sin forzar implementación nueva
-const showNuevaAeronave = ref(false)
+const showNuevaAeronave = ref(false);
 
 const abrirFormulario = () => {
-  showNuevaAeronave.value = true
-}
+  showNuevaAeronave.value = true;
+};
+
+const cargarAeronaves = async () => {
+  try {
+    const data = await listarAeronaves();
+    aeronaves.value = data;
+  } catch (error) {
+    console.error("Error al cargar aeronaves:", error);
+  }
+};
 
 const guardarNuevaAeronave = async (payload: PayloadNuevaAeronave) => {
   try {
-    await guardarAeronave(payload)
+    const modeloEncontrado = catalogos.value.modelos.find(m => m.nombre === payload.modeloAeronave);
+    const idModeloNumber = modeloEncontrado ? modeloEncontrado.id : 0;
+    const payloadParaBackend = {
+      ...payload,
+      modeloAeronave: idModeloNumber
+    };
+    await guardarAeronave(payloadParaBackend as any);
 
-    // Si existía lista local, se mantiene el push como estaba
+    alert("¡Aeronave registrada con éxito!");
     if (Array.isArray(aeronaves.value)) {
       aeronaves.value.push({
         matricula: payload.matricula,
         nsAeronave: payload.nsAeronave,
-        modeloAeronave: payload.modeloAeronave,
+        modeloAeronave: payload.modeloAeronave, 
         marcaAeronave: payload.marcaAeronave,
         tipoAeronave: payload.tipoAeronave,
         operador: payload.operador,
@@ -194,38 +220,39 @@ const guardarNuevaAeronave = async (payload: PayloadNuevaAeronave) => {
         maAPU: payload.maAPU,
         moAPU: payload.moAPU,
         nsAPU: payload.nsAPU
-      })
+      });
     }
-
-    showNuevaAeronave.value = false
+    showNuevaAeronave.value = false;
   } catch (error) {
-    console.error("Error al guardar aeronave", error)
+    console.error("Error al guardar aeronave", error);
+    alert("Hubo un error al guardar la aeronave en el servidor.");
   }
 }
 
 // Tipado local mínimo para no romper esta vista
 type AeronaveLocal = {
-  matricula: string
-  nsAeronave: string
-  modeloAeronave: string
-  marcaAeronave: string
-  tipoAeronave: string
-  operador: string
-  maMotorLH: string
-  moMotorLH: string
-  nsMotorLH: string
-  maMotorRH: string
-  moMotorRH: string
-  nsMotorRH: string
-  maMotorC: string
-  moMotorC: string
-  nsMotorC: string
-  maAPU: string
-  moAPU: string
-  nsAPU: string
-}
+  matricula: string;
+  nsAeronave: string;
+  modeloAeronave: string;
+  marcaAeronave: string;
+  tipoAeronave: string;
+  operador: string;
+  maMotorLH: string;
+  moMotorLH: string;
+  nsMotorLH: string;
+  maMotorRH: string;
+  moMotorRH: string;
+  nsMotorRH: string;
+  maMotorC: string;
+  moMotorC: string;
+  nsMotorC: string;
+  maAPU: string;
+  moAPU: string;
+  nsAPU: string;
+};
 
-const aeronaves = ref<AeronaveLocal[]>([])
+const aeronaves = ref<AeronaveLocal[]>([]);
+
 
 const catalogos = computed(() => {
   return {
@@ -234,8 +261,7 @@ const catalogos = computed(() => {
     modelos: modelosAPI.value.map(m => ({
       id: m.idModelo || 0,
       nombre: m.modelo,
-      marca: m.marca,
-      tipo: m.tipoAeronave ? String(m.tipoAeronave) : 'N/A'
+      marca: m.marca
     }))
   };
 });
@@ -243,44 +269,48 @@ const catalogos = computed(() => {
 // ==========================================
 // 4. NUEVO: LÓGICA DE OTs
 // ==========================================
-const ots = ref<OTListado[]>([])
-const cargandoOTs = ref(false)
+const ots = ref<OTListado[]>([]);
+const cargandoOTs = ref(false);
 
 const cargarOTs = async () => {
   try {
-    cargandoOTs.value = true
-    ots.value = await otService.listarOTs()
+    cargandoOTs.value = true;
+    ots.value = await otService.listarOTs();
   } catch (error) {
-    console.error('Error al cargar OTs:', error)
+    console.error("Error al cargar OTs:", error);
   } finally {
-    cargandoOTs.value = false
+    cargandoOTs.value = false;
   }
-}
+};
 
 // ==========================================
 // 5. HELPERS VISUALES
 // ==========================================
 const getPriorityColor = (p: string) => {
   switch (p) {
-    case 'Urgente': return 'bg-red-100 text-red-700 border-red-200';
-    case 'Alta': return 'bg-orange-100 text-orange-700 border-orange-200';
-    case 'Media': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-    default: return 'bg-green-100 text-green-700 border-green-200';
+    case "Urgente":
+      return "bg-red-100 text-red-700 border-red-200";
+    case "Alta":
+      return "bg-orange-100 text-orange-700 border-orange-200";
+    case "Media":
+      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    default:
+      return "bg-green-100 text-green-700 border-green-200";
   }
 };
 
 const getStatusColor = (estado: string) => {
   switch (estado) {
-    case 'Activo':
-    case 'Abierta':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-    case 'Pendiente':
-      return 'bg-yellow-50 text-yellow-700 border-yellow-200'
-    case 'Inactivo':
-    case 'Cerrada':
-      return 'bg-red-50 text-red-700 border-red-200'
+    case "Activo":
+    case "Abierta":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "Pendiente":
+      return "bg-yellow-50 text-yellow-700 border-yellow-200";
+    case "Inactivo":
+    case "Cerrada":
+      return "bg-red-50 text-red-700 border-red-200";
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200'
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 };
 
@@ -291,25 +321,30 @@ onMounted(() => {
   cargarClientes();
   cargarModelos();
   cargarOTs();
+  cargarAeronaves(); 
 });
 
-const activeTab = ref('todas');
+const activeTab = ref("todas");
 const tabs = [
-  { id: 'todas', label: 'Todas las OT' },
-  { id: 'crear', label: 'Crear OT' },
-  { id: 'aeronaves', label: 'Aeronaves' },
-  { id: 'clientes', label: 'Clientes' },
-  { id: 'modelos', label: 'Modelos' },
-  { id: 'reportes', label: 'Reportes Programados' },
+  { id: "todas", label: "Todas las OT" },
+  { id: "crear", label: "Crear OT" },
+  { id: "clientes", label: "Clientes" },
+  { id: "modelos", label: "Modelos" },
+  { id: "aeronaves", label: "Aeronaves" },
+  { id: "reportes", label: "Reportes Programados" },
 ];
 </script>
 
 <template>
   <div class="space-y-6 pb-12">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div
+      class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+    >
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Ingeniería</h1>
-        <p class="text-gray-500 text-sm">Gestiona órdenes de trabajo, aeronaves, clientes y reportes.</p>
+        <p class="text-gray-500 text-sm">
+          Gestiona órdenes de trabajo, aeronaves, clientes y reportes.
+        </p>
       </div>
     </div>
 
@@ -323,7 +358,7 @@ const tabs = [
             activeTab === tab.id
               ? 'border-blue-600 text-blue-600 font-semibold'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-            'whitespace-nowrap py-3 px-1 border-b-2 text-sm transition-colors'
+            'whitespace-nowrap py-3 px-1 border-b-2 text-sm transition-colors',
           ]"
         >
           {{ tab.label }}
@@ -333,9 +368,13 @@ const tabs = [
 
     <!-- TODAS LAS OT -->
     <div v-if="activeTab === 'todas'" class="space-y-4 animate-fade-in">
-      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+      <div
+        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+      >
         <table class="w-full text-left border-collapse min-w-max">
-          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <thead
+            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+          >
             <tr>
               <th class="px-6 py-4">No. OT</th>
               <th class="px-6 py-4">Matrícula</th>
@@ -361,19 +400,35 @@ const tabs = [
             </tr>
 
             <tr v-for="ot in ots" :key="ot.idOT" class="hover:bg-gray-50">
-              <td class="px-6 py-4 font-semibold text-gray-900 text-sm">{{ ot.noOT }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.matricula || 'Sin matrícula' }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.cliente || 'Sin cliente' }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.fechaCreacion || '-' }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.fechaEntrega || '-' }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ ot.fechaCierre || '-' }}</td>
+              <td class="px-6 py-4 font-semibold text-gray-900 text-sm">
+                {{ ot.noOT }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ ot.matricula || "Sin matrícula" }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ ot.cliente || "Sin cliente" }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ ot.fechaCreacion || "-" }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ ot.fechaEntrega || "-" }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ ot.fechaCierre || "-" }}
+              </td>
               <td class="px-6 py-4">
-                <span :class="`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ot.estado || '')}`">
-                  {{ ot.estado || 'Sin estado' }}
+                <span
+                  :class="`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ot.estado || '')}`"
+                >
+                  {{ ot.estado || "Sin estado" }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <button class="text-gray-900 hover:text-blue-600 font-bold text-sm">
+                <button
+                  class="text-gray-900 hover:text-blue-600 font-bold text-sm"
+                >
                   Ver
                 </button>
               </td>
@@ -389,7 +444,10 @@ const tabs = [
     </div>
 
     <!-- AERONAVES -->
-    <div v-else-if="activeTab === 'aeronaves'" class="space-y-4 animate-fade-in">
+    <div
+      v-else-if="activeTab === 'aeronaves'"
+      class="space-y-4 animate-fade-in"
+    >
       <div class="flex justify-end">
         <button
           @click="abrirFormulario"
@@ -403,13 +461,18 @@ const tabs = [
       <NuevaAeronaveModal
         :open="showNuevaAeronave"
         :catalogos="catalogos"
-        @close="showNuevaAeronave=false"
+        :clientes="clientes"
+        @close="showNuevaAeronave = false"
         @submit="guardarNuevaAeronave"
       />
 
-      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+      <div
+        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+      >
         <table class="w-full text-left border-collapse min-w-max">
-          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <thead
+            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+          >
             <tr>
               <th class="px-6 py-4">Matrícula</th>
               <th class="px-6 py-4">Modelo</th>
@@ -429,21 +492,37 @@ const tabs = [
               </td>
             </tr>
 
-            <tr v-for="nave in aeronaves" :key="nave.matricula" class="hover:bg-gray-50">
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ nave.matricula }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.modeloAeronave }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ nave.marcaAeronave }}</td>
-              <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ nave.nsAeronave }}</td>
+            <tr
+              v-for="nave in aeronaves"
+              :key="nave.matricula"
+              class="hover:bg-gray-50"
+            >
+              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
+                {{ nave.matricula }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ nave.modeloAeronave }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ nave.marcaAeronave }}
+              </td>
+              <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+                {{ nave.nsAeronave }}
+              </td>
               <td class="px-6 py-4 text-gray-600 text-sm">-</td>
               <td class="px-6 py-4 text-gray-600 text-sm">-</td>
               <td class="px-6 py-4 text-gray-600 text-sm">-</td>
               <td class="px-6 py-4 text-gray-600 text-sm">-</td>
               <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <button class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                  <button
+                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                  >
                     <Edit2 class="w-4 h-4" />
                   </button>
-                  <button class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                  <button
+                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                  >
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -456,9 +535,13 @@ const tabs = [
 
     <!-- CLIENTES -->
     <div v-else-if="activeTab === 'clientes'" class="space-y-4 animate-fade-in">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+      >
         <div class="relative w-full sm:w-96">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
+          />
           <input
             v-model="searchQueryClientes"
             type="text"
@@ -475,9 +558,13 @@ const tabs = [
         </button>
       </div>
 
-      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+      <div
+        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+      >
         <table class="w-full text-left border-collapse min-w-max">
-          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <thead
+            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+          >
             <tr>
               <th class="px-6 py-4">ID</th>
               <th class="px-6 py-4">Nombre del cliente</th>
@@ -492,36 +579,73 @@ const tabs = [
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-if="clientesFiltrados.length === 0">
-              <td colspan="9" class="p-8 text-center text-gray-500">No se encontraron clientes.</td>
+              <td colspan="9" class="p-8 text-center text-gray-500">
+                No se encontraron clientes.
+              </td>
             </tr>
 
-            <tr v-for="cliente in clientesFiltrados" :key="cliente.idCliente" class="hover:bg-gray-50 group">
-              <td class="px-6 py-4 text-gray-500 font-mono text-xs">{{ cliente.idCliente }}</td>
+            <tr
+              v-for="cliente in clientesFiltrados"
+              :key="cliente.idCliente"
+              class="hover:bg-gray-50 group"
+            >
+              <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+                {{ cliente.idCliente }}
+              </td>
               <td class="px-6 py-4 font-bold text-gray-900 text-sm">
                 <div class="flex items-center gap-2">
-                  <Building2 class="w-4 h-4 text-gray-400" />{{ cliente.compania }}
+                  <Building2 class="w-4 h-4 text-gray-400" />{{
+                    cliente.compania
+                  }}
                 </div>
               </td>
-              <td class="px-6 py-4 text-gray-600 font-mono text-xs">{{ cliente.rfc }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ cliente.contacto }}</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ cliente.telefono }}</td>
-              <td class="px-6 py-4 text-blue-600 text-sm hover:underline cursor-pointer">{{ cliente.correo }}</td>
+              <td class="px-6 py-4 text-gray-600 font-mono text-xs">
+                {{ cliente.rfc }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ cliente.contacto }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 text-sm">
+                {{ cliente.telefono }}
+              </td>
+              <td
+                class="px-6 py-4 text-blue-600 text-sm hover:underline cursor-pointer"
+              >
+                {{ cliente.correo }}
+              </td>
               <td class="px-6 py-4 text-center">
-                <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
-                  {{ cliente.aeronaves || 'Pendiente' }}
+                <span
+                  class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold"
+                >
+                  {{ cliente.aeronaves || "Pendiente" }}
                 </span>
               </td>
               <td class="px-6 py-4 text-center">
-                <span :class="['px-2.5 py-1 rounded-full text-xs font-semibold border', (cliente.estado || 'Activo') === 'Activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200']">
-                  {{ cliente.estado || 'Activo' }}
+                <span
+                  :class="[
+                    'px-2.5 py-1 rounded-full text-xs font-semibold border',
+                    (cliente.estado || 'Activo') === 'Activo'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-red-50 text-red-700 border-red-200',
+                  ]"
+                >
+                  {{ cliente.estado || "Activo" }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <button @click="abrirModalEditarCliente(cliente)" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                <div
+                  class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                >
+                  <button
+                    @click="abrirModalEditarCliente(cliente)"
+                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                  >
                     <Edit2 class="w-4 h-4" />
                   </button>
-                  <button @click="eliminarClienteLocal(cliente.idCliente!)" class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                  <button
+                    @click="eliminarClienteLocal(cliente.idCliente!)"
+                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                  >
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -534,9 +658,13 @@ const tabs = [
 
     <!-- MODELOS -->
     <div v-else-if="activeTab === 'modelos'" class="space-y-4 animate-fade-in">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+      >
         <div class="relative w-full sm:w-96">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
+          />
           <input
             v-model="searchQueryModelos"
             type="text"
@@ -553,9 +681,13 @@ const tabs = [
         </button>
       </div>
 
-      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+      <div
+        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+      >
         <table class="w-full text-left border-collapse min-w-max">
-          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+          <thead
+            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+          >
             <tr>
               <th class="px-6 py-4">ID</th>
               <th class="px-6 py-4">Modelo</th>
@@ -565,19 +697,35 @@ const tabs = [
           </thead>
           <tbody class="divide-y divide-gray-100">
             <tr v-if="modelosFiltrados.length === 0">
-              <td colspan="4" class="p-8 text-center text-gray-500">No se encontraron modelos.</td>
+              <td colspan="4" class="p-8 text-center text-gray-500">
+                No se encontraron modelos.
+              </td>
             </tr>
 
-            <tr v-for="mod in modelosFiltrados" :key="mod.idModelo" class="hover:bg-gray-50">
-              <td class="px-6 py-4 text-gray-500 text-xs">{{ mod.idModelo }}</td>
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ mod.modelo }}</td>
+            <tr
+              v-for="mod in modelosFiltrados"
+              :key="mod.idModelo"
+              class="hover:bg-gray-50"
+            >
+              <td class="px-6 py-4 text-gray-500 text-xs">
+                {{ mod.idModelo }}
+              </td>
+              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
+                {{ mod.modelo }}
+              </td>
               <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.marca }}</td>
               <td class="px-6 py-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <button @click="abrirModalEditarModelo(mod)" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                  <button
+                    @click="abrirModalEditarModelo(mod)"
+                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                  >
                     <Edit2 class="w-4 h-4" />
                   </button>
-                  <button @click="eliminarModeloLocal(mod.idModelo!)" class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                  <button
+                    @click="eliminarModeloLocal(mod.idModelo!)"
+                    class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                  >
                     <Trash2 class="w-4 h-4" />
                   </button>
                 </div>
@@ -589,7 +737,10 @@ const tabs = [
     </div>
 
     <!-- REPORTES -->
-    <div v-else class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in">
+    <div
+      v-else
+      class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in"
+    >
       <table class="w-full text-left border-collapse min-w-max">
         <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
           <tr>
@@ -636,7 +787,13 @@ const tabs = [
   animation: fadeIn 0.3s ease-in-out;
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
