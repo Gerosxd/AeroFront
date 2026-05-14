@@ -31,6 +31,7 @@ import { listarSalidas, obtenerSalidaPorId } from '../services/salida.service' /
 
 
 interface ArticuloTabla {
+  idArticulo: number
   id: string
   noParte: string
   codigo: string
@@ -85,6 +86,13 @@ const entradas = ref<EntradaArticuloListadoResponse[]>([])
 const entradaSeleccionada = ref<EntradaArticuloRegistroResponse | null>(null)
 
 const loadingDetalle = ref(false)
+const usuarioLocal = localStorage.getItem('usuario') || localStorage.getItem('user') || '{}';
+const usuarioParseado = JSON.parse(usuarioLocal !== 'undefined' ? usuarioLocal : '{}');
+
+const userStore = ref({
+  id: usuarioParseado.idUsuario || 1, // Si no lo encuentra, manda 1 por defecto
+  nombre: usuarioParseado.nombre || 'Administrador'
+});
 
 const busquedaArticulos = ref('')
 const busquedaEntradas = ref('')
