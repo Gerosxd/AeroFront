@@ -1,436 +1,147 @@
 <script setup lang="ts">
-import { reactive, computed, watch } from 'vue'
-import { X, Save } from 'lucide-vue-next'
+import { reactive } from 'vue';
+import { X, Save, Plane } from 'lucide-vue-next';
 
 export interface PayloadNuevaAeronave {
-  matricula: string
-  nsAeronave: string
-  modeloAeronave: number
-  operador: string
-  maMotorLH: string
-  moMotorLH: string
-  nsMotorLH: string
-  maMotorRH: string
-  moMotorRH: string
-  nsMotorRH: string
-  maMotorC: string
-  moMotorC: string
-  nsMotorC: string
-  maAPU: string
-  moAPU: string
-  nsAPU: string
-}
-
-interface CatalogoItem {
-  id: number
-  nombre: string
-}
-
-interface CatalogoModeloItem extends CatalogoItem {
-  marca?: string
-  tipo?: string
-}
-
-interface CatalogosAeronave {
-  modelos: CatalogoModeloItem[]
+  matricula: string;
+  nsAeronave: string;
+  modeloAeronave: string;
+  marcaAeronave: string;
+  tipoAeronave: string;
+  operador: string;
+  maMotorLH: string; moMotorLH: string; nsMotorLH: string;
+  maMotorRH: string; moMotorRH: string; nsMotorRH: string;
+  maMotorC: string; moMotorC: string; nsMotorC: string;
+  maAPU: string; moAPU: string; nsAPU: string;
 }
 
 const props = defineProps<{
-  open: boolean
-  catalogos: CatalogosAeronave
-}>()
+  open: boolean;
+  catalogos: { modelos: any[] };
+  clientes?: any[]; // Ticket 37: Recibimos la lista de clientes
+}>();
 
 const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'submit', payload: PayloadNuevaAeronave): void
-}>()
+  (e: 'close'): void;
+  (e: 'submit', payload: PayloadNuevaAeronave): void;
+}>();
 
-const crearAeronaveVacia = (): PayloadNuevaAeronave => ({
-  matricula: '',
-  nsAeronave: '',
-  modeloAeronave: 0,
-  operador: '',
-  maMotorLH: '',
-  moMotorLH: '',
-  nsMotorLH: '',
-  maMotorRH: '',
-  moMotorRH: '',
-  nsMotorRH: '',
-  maMotorC: '',
-  moMotorC: '',
-  nsMotorC: '',
-  maAPU: '',
-  moAPU: '',
-  nsAPU: ''
-})
-
-const form = reactive<PayloadNuevaAeronave>(crearAeronaveVacia())
-
-const selectedModelo = computed(() => {
-  return props.catalogos.modelos.find(item => item.id === form.modeloAeronave)
-})
+const form = reactive<PayloadNuevaAeronave>({
+  matricula: '', nsAeronave: '', modeloAeronave: '', marcaAeronave: '', tipoAeronave: '', operador: '',
+  maMotorLH: '', moMotorLH: '', nsMotorLH: '',
+  maMotorRH: '', moMotorRH: '', nsMotorRH: '',
+  maMotorC: '', moMotorC: '', nsMotorC: '',
+  maAPU: '', moAPU: '', nsAPU: ''
+});
 
 const resetForm = () => {
-  Object.assign(form, crearAeronaveVacia())
-}
+  Object.keys(form).forEach(key => (form as any)[key] = '');
+};
 
-watch(
-  () => props.open,
-  (value) => {
-    if (value) resetForm()
-  }
-)
+const handleClose = () => {
+  resetForm();
+  emit('close');
+};
 
-const close = () => emit('close')
-
-const validarFormulario = () => {
-
-  if (!form.matricula.trim()) {
-    alert('La matrícula es obligatoria')
-    return false
-  }
-
-  if (!form.nsAeronave.trim()) {
-    alert('El número de serie es obligatorio')
-    return false
-  }
-
-  if (!form.modeloAeronave) {
-    alert('Selecciona un modelo')
-    return false
-  }
-
-  if (!form.operador.trim()) {
-    alert('El operador es obligatorio')
-    return false
-  }
-
-  return true
-}
-
-const guardar = () => {
-
-  if (!validarFormulario()) return
-
-  emit('submit', {
-    matricula: form.matricula.trim(),
-    nsAeronave: form.nsAeronave.trim(),
-    modeloAeronave: Number(form.modeloAeronave),
-    operador: form.operador.trim(),
-    maMotorLH: form.maMotorLH.trim(),
-    moMotorLH: form.moMotorLH.trim(),
-    nsMotorLH: form.nsMotorLH.trim(),
-    maMotorRH: form.maMotorRH.trim(),
-    moMotorRH: form.moMotorRH.trim(),
-    nsMotorRH: form.nsMotorRH.trim(),
-    maMotorC: form.maMotorC.trim(),
-    moMotorC: form.moMotorC.trim(),
-    nsMotorC: form.nsMotorC.trim(),
-    maAPU: form.maAPU.trim(),
-    moAPU: form.moAPU.trim(),
-    nsAPU: form.nsAPU.trim()
-  })
-
-}
+const handleSubmit = () => {
+  emit('submit', { ...form });
+  resetForm();
+};
 </script>
 
 <template>
-  <teleport to="body">
+  <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+      
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <h3 class="font-bold text-gray-900 text-lg flex items-center gap-2">
+          <Plane class="w-5 h-5 text-blue-600" />
+          Registrar Nueva Aeronave
+        </h3>
+        <button @click="handleClose" class="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-500">
+          <X class="w-5 h-5" />
+        </button>
+      </div>
 
-    <div v-if="open" class="fixed inset-0 z-[9999]">
-
-      <div
-        class="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
-        @click="close"
-      ></div>
-
-      <div class="absolute inset-0 flex items-center justify-center p-4">
-
-        <div class="w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
-
-          <!-- Cabecera -->
-
-          <div class="flex items-start justify-between px-6 py-5 border-b border-slate-200">
-
+      <form @submit.prevent="handleSubmit" class="p-6 overflow-y-auto space-y-6">
+        
+        <div>
+          <h4 class="text-sm font-bold text-blue-600 uppercase mb-3 border-b pb-1">Datos Generales</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <h2 class="text-xl font-semibold text-slate-900">
-                Nueva Aeronave
-              </h2>
-
-              <p class="text-slate-500 mt-1 text-sm">
-                Registrar una nueva aeronave en el sistema
-              </p>
+              <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Matrícula <span class="text-red-500">*</span></label>
+              <input v-model="form.matricula" required type="text" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-
-            <button
-              class="p-2 rounded-lg hover:bg-slate-100 text-slate-700"
-              @click="close"
-            >
-              <X class="w-5 h-5" />
-            </button>
-
-          </div>
-
-          <!-- Cuerpo -->
-
-          <div class="flex-1 overflow-y-auto px-6 py-6 bg-slate-50">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Matrícula *
-                </label>
-
-                <input
-                  v-model="form.matricula"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  No. Serie Aeronave *
-                </label>
-
-                <input
-                  v-model="form.nsAeronave"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Modelo *
-                </label>
-
-                <select
-                  v-model.number="form.modeloAeronave"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option :value="0" disabled>
-                    Seleccionar modelo
-                  </option>
-
-                  <option
-                    v-for="item in catalogos.modelos"
-                    :key="item.id"
-                    :value="item.id"
-                  >
-                    {{ item.nombre }}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Marca Aeronave
-                </label>
-
-                <input
-                  :value="selectedModelo?.marca ?? ''"
-                  type="text"
-                  readonly
-                  class="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Tipo Aeronave
-                </label>
-
-                <input
-                  :value="selectedModelo?.tipo ?? ''"
-                  type="text"
-                  readonly
-                  class="w-full rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm text-slate-700"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Operador *
-                </label>
-
-                <input
-                  v-model="form.operador"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Marca Motor LH
-                </label>
-
-                <input
-                  v-model="form.maMotorLH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Modelo Motor LH
-                </label>
-
-                <input
-                  v-model="form.moMotorLH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  No. Serie Motor LH
-                </label>
-
-                <input
-                  v-model="form.nsMotorLH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Marca Motor RH
-                </label>
-
-                <input
-                  v-model="form.maMotorRH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Modelo Motor RH
-                </label>
-
-                <input
-                  v-model="form.moMotorRH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  No. Serie Motor RH
-                </label>
-
-                <input
-                  v-model="form.nsMotorRH"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Marca Motor C
-                </label>
-
-                <input
-                  v-model="form.maMotorC"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Modelo Motor C
-                </label>
-
-                <input
-                  v-model="form.moMotorC"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  No. Serie Motor C
-                </label>
-
-                <input
-                  v-model="form.nsMotorC"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Marca APU
-                </label>
-
-                <input
-                  v-model="form.maAPU"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  Modelo APU
-                </label>
-
-                <input
-                  v-model="form.moAPU"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-slate-800 mb-2">
-                  No. Serie APU
-                </label>
-
-                <input
-                  v-model="form.nsAPU"
-                  type="text"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm"
-                />
-              </div>
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">No. Serie <span class="text-red-500">*</span></label>
+              <input v-model="form.nsAeronave" required type="text" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-          </div>
-
-          <!-- FOOTER -->
-
-          <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-white">
-
-            <button
-              @click="close"
-              class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-medium hover:bg-slate-50"
-            >
-              Cancelar
-            </button>
-
-            <button
-              @click="guardar"
-              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0f172a] text-white text-sm font-medium hover:bg-slate-800"
-            >
-              <Save class="w-4 h-4" />
-              Guardar Aeronave
-            </button>
-
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Modelo <span class="text-red-500">*</span></label>
+              <select v-model="form.modeloAeronave" required class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled>Seleccione un modelo</option>
+                <option v-for="mod in props.catalogos?.modelos || []" :key="mod.id" :value="mod.nombre">{{ mod.nombre }} ({{ mod.marca }})</option>
+              </select>
+            </div>
+            
+            <div class="md:col-span-3">
+              <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Cliente / Operador <span class="text-red-500">*</span></label>
+              <select v-model="form.operador" required class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled>Seleccione un cliente registrado</option>
+                <option v-for="cli in props.clientes || []" :key="cli.idCliente" :value="cli.compania">{{ cli.compania }} - RFC: {{ cli.rfc }}</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-  </teleport>
+        <h4 class="text-sm font-bold text-slate-700 uppercase mb-3 border-b pb-1 mt-6">Especificaciones de Motores</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+            <h5 class="text-xs font-bold text-gray-800 uppercase mb-3 text-center">Motor Izquierdo (LH)</h5>
+            <div class="space-y-3">
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Marca</label><input v-model="form.maMotorLH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Modelo</label><input v-model="form.moMotorLH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">No. Serie</label><input v-model="form.nsMotorLH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+            <h5 class="text-xs font-bold text-gray-800 uppercase mb-3 text-center">Motor Derecho (RH)</h5>
+            <div class="space-y-3">
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Marca</label><input v-model="form.maMotorRH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Modelo</label><input v-model="form.moMotorRH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">No. Serie</label><input v-model="form.nsMotorRH" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+            <h5 class="text-xs font-bold text-gray-800 uppercase mb-3 text-center">Motor Central (C)</h5>
+            <div class="space-y-3">
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Marca</label><input v-model="form.maMotorC" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Modelo</label><input v-model="form.moMotorC" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">No. Serie</label><input v-model="form.nsMotorC" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+            <h5 class="text-xs font-bold text-gray-800 uppercase mb-3 text-center">APU</h5>
+            <div class="space-y-3">
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Marca</label><input v-model="form.maAPU" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">Modelo</label><input v-model="form.moAPU" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+              <div><label class="text-[10px] uppercase font-semibold text-gray-500 block mb-1">No. Serie</label><input v-model="form.nsAPU" type="text" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm" /></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+          <button type="button" @click="handleClose" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+          <button type="submit" class="flex items-center gap-2 px-6 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition-colors shadow-md">
+            <Save class="w-4 h-4" /> Guardar Aeronave
+          </button>
+        </div>
+        
+      </form>
+    </div>
+  </div>
 </template>

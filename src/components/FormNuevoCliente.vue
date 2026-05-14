@@ -35,8 +35,7 @@ const handleSubmit = () => {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-      
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
         <h3 class="font-bold text-gray-900 text-lg">
           {{ props.clienteAEditar ? 'Editar Cliente' : 'Registrar Nuevo Cliente' }}
@@ -46,7 +45,7 @@ const handleSubmit = () => {
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-6">
+      <form @submit.prevent="handleSubmit" class="p-6 overflow-y-auto">
         
         <h4 class="text-sm font-bold text-blue-600 uppercase mb-4 border-b pb-2">Datos de la Empresa</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
