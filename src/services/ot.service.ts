@@ -29,6 +29,11 @@ class OTService {
         const { data } = await http.get<OTListado[]>('/api/ots')
         return data
     }
+
+    async obtenerPorId(idOT: number): Promise<any> {
+        const { data } = await http.get<any>(`/api/ots/${idOT}`)
+        return data
+    }
 }
 
 export default new OTService()

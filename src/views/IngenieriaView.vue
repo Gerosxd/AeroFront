@@ -10,6 +10,7 @@ import CrearOTForm from "../components/CrearOTForm.vue";
 // NUEVO: OT
 import otService from "../services/ot.service";
 import type { OTListado } from "../types/ot";
+import DetalleOTModal from '../components/DetalleOTModal.vue';
 
 // --- IMPORTACIONES DE CLIENTES ---
 import FormNuevoCliente from "../components/FormNuevoCliente.vue";
@@ -30,6 +31,11 @@ import {
   eliminarModeloService,
   type PayloadModeloBackend,
 } from "../services/modelo.service";
+
+// --- IMPORTACIONES DE REPORTES PROGRAMADOS ---
+import { programadaService } from '../services/programada.service';
+import type { TareaProgramada } from '../types/programada';
+import FormNuevaProgramada from '../components/FormProgramadaModal.vue';
 
 // ==========================================
 // 1. LÓGICA DE CLIENTES
@@ -272,6 +278,11 @@ const catalogos = computed(() => {
 const ots = ref<OTListado[]>([]);
 const cargandoOTs = ref(false);
 
+// VARIABLES RECTIVAS DE CONTROL PARA DETALLE
+const mostrarModalDetalleOT = ref(false);
+const cargandoDetalle = ref(false);
+const otSeleccionadaDetalle = ref<OTDetalle | null>(null);
+
 const cargarOTs = async () => {
   try {
     cargandoOTs.value = true;
@@ -283,8 +294,64 @@ const cargarOTs = async () => {
   }
 };
 
+// FUNCIÓN PARA SOLICITAR EL REGISTRO ASÍNCRONO
+const abrirDetalleOT = async (idOT: number) => {
+  otSeleccionadaDetalle.value = null;
+  cargandoDetalle.value = true;
+  mostrarModalDetalleOT.value = true;
+  try {
+    // Invocamos el backend a través del servicio
+    otSeleccionadaDetalle.value = await otService.obtenerPorId(idOT);
+  } catch (error) {
+    alert("No se pudo obtener la información detallada de la Orden de Trabajo.");
+    mostrarModalDetalleOT.value = false;
+  } finally {
+    cargandoDetalle.value = false;
+  }
+};
+
 // ==========================================
-// 5. HELPERS VISUALES
+// 5. LÓGICA DE REPORTES PROGRAMADOS
+// ==========================================
+const reportesAPI = ref<TareaProgramada[]>([]);
+const mostrarModalReporte = ref(false);
+const reporteSeleccionado = ref<TareaProgramada | null>(null);
+
+const cargarReportes = async () => {
+  try {
+    reportesAPI.value = await programadaService.listarTodas();
+  } catch (error) {
+    console.error("Error al cargar reportes:", error);
+  }
+};
+
+const abrirModalCrearReporte = () => {
+  reporteSeleccionado.value = null;
+  mostrarModalReporte.value = true;
+};
+
+const abrirModalVerReporte = (reporte: TareaProgramada) => {
+  reporteSeleccionado.value = { ...reporte };
+  mostrarModalReporte.value = true;
+};
+
+const cerrarModalReporte = () => {
+  reporteSeleccionado.value = null;
+  mostrarModalReporte.value = false;
+};
+
+const handleGuardarReporte = async (datos: TareaProgramada) => {
+  try {
+    await programadaService.registrar(datos);
+    await cargarReportes();
+    cerrarModalReporte();
+  } catch (error: any) {
+    alert(error.response?.data || "Error al guardar el reporte.");
+  }
+};
+
+// ==========================================
+// 6. HELPERS VISUALES
 // ==========================================
 const getPriorityColor = (p: string) => {
   switch (p) {
@@ -314,14 +381,16 @@ const getStatusColor = (estado: string) => {
   }
 };
 
+
 // ==========================================
-// 6. INICIALIZACIÓN Y PESTAÑAS
+// 7. INICIALIZACIÓN Y PESTAÑAS
 // ==========================================
 onMounted(() => {
   cargarClientes();
   cargarModelos();
   cargarOTs();
-  cargarAeronaves(); 
+  cargarAeronaves();
+  cargarReportes();
 });
 
 const activeTab = ref("todas");
@@ -338,7 +407,7 @@ const tabs = [
 <template>
   <div class="space-y-6 pb-12">
     <div
-      class="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4"
     >
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Ingeniería</h1>
@@ -351,10 +420,10 @@ const tabs = [
     <div class="border-b border-gray-200 overflow-x-auto">
       <nav class="flex gap-6 min-w-max">
         <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="[
+            v-for="tab in tabs"
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            :class="[
             activeTab === tab.id
               ? 'border-blue-600 text-blue-600 font-semibold'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
@@ -366,92 +435,92 @@ const tabs = [
       </nav>
     </div>
 
-    <!-- TODAS LAS OT -->
     <div v-if="activeTab === 'todas'" class="space-y-4 animate-fade-in">
       <div
-        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+          class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
       >
         <table class="w-full text-left border-collapse min-w-max">
           <thead
-            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+              class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
           >
-            <tr>
-              <th class="px-6 py-4">No. OT</th>
-              <th class="px-6 py-4">Matrícula</th>
-              <th class="px-6 py-4">Cliente</th>
-              <th class="px-6 py-4">Fecha creación</th>
-              <th class="px-6 py-4">Fecha entrega</th>
-              <th class="px-6 py-4">Fecha cierre</th>
-              <th class="px-6 py-4">Estado</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
-            </tr>
+          <tr>
+            <th class="px-6 py-4">No. OT</th>
+            <th class="px-6 py-4">Matrícula</th>
+            <th class="px-6 py-4">Cliente</th>
+            <th class="px-6 py-4">Fecha creación</th>
+            <th class="px-6 py-4">Fecha entrega</th>
+            <th class="px-6 py-4">Fecha cierre</th>
+            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-if="cargandoOTs">
-              <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-                Cargando órdenes de trabajo...
-              </td>
-            </tr>
+          <tr v-if="cargandoOTs">
+            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+              Cargando órdenes de trabajo...
+            </td>
+          </tr>
 
-            <tr v-else-if="ots.length === 0">
-              <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-                No hay órdenes de trabajo registradas.
-              </td>
-            </tr>
+          <tr v-else-if="ots.length === 0">
+            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+              No hay órdenes de trabajo registradas.
+            </td>
+          </tr>
 
-            <tr v-for="ot in ots" :key="ot.idOT" class="hover:bg-gray-50">
-              <td class="px-6 py-4 font-semibold text-gray-900 text-sm">
-                {{ ot.noOT }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ ot.matricula || "Sin matrícula" }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ ot.cliente || "Sin cliente" }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ ot.fechaCreacion || "-" }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ ot.fechaEntrega || "-" }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ ot.fechaCierre || "-" }}
-              </td>
-              <td class="px-6 py-4">
+          <tr v-for="ot in ots" :key="ot.idOT" class="hover:bg-gray-50 group">
+            <td class="px-6 py-4 font-semibold text-gray-900 text-sm">
+              {{ ot.noOT }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ ot.matricula || "Sin matrícula" }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ ot.cliente || "Sin cliente" }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ ot.fechaCreacion || "-" }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ ot.fechaEntrega || "-" }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ ot.fechaCierre || "-" }}
+            </td>
+            <td class="px-6 py-4">
                 <span
-                  :class="`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ot.estado || '')}`"
+                    :class="`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ot.estado || '')}`"
                 >
                   {{ ot.estado || "Sin estado" }}
                 </span>
-              </td>
-              <td class="px-6 py-4 text-right">
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <button
-                  class="text-gray-900 hover:text-blue-600 font-bold text-sm"
+                    @click="abrirDetalleOT(ot.idOT)"
+                    class="text-gray-900 hover:text-blue-600 font-bold text-sm transition-colors"
                 >
                   Ver
                 </button>
-              </td>
-            </tr>
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- CREAR OT -->
     <div v-else-if="activeTab === 'crear'" class="animate-fade-in">
       <CrearOTForm />
     </div>
 
-    <!-- AERONAVES -->
     <div
-      v-else-if="activeTab === 'aeronaves'"
-      class="space-y-4 animate-fade-in"
+        v-else-if="activeTab === 'aeronaves'"
+        class="space-y-4 animate-fade-in"
     >
       <div class="flex justify-end">
         <button
-          @click="abrirFormulario"
-          class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm"
+            @click="abrirFormulario"
+            class="bg-[#0f172a] hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm font-medium text-sm"
         >
           <Plus class="w-4 h-4" />
           Nueva Aeronave
@@ -459,170 +528,169 @@ const tabs = [
       </div>
 
       <NuevaAeronaveModal
-        :open="showNuevaAeronave"
-        :catalogos="catalogos"
-        :clientes="clientes"
-        @close="showNuevaAeronave = false"
-        @submit="guardarNuevaAeronave"
+          :open="showNuevaAeronave"
+          :catalogos="catalogos"
+          :clientes="clientes"
+          @close="showNuevaAeronave = false"
+          @submit="guardarNuevaAeronave"
       />
 
       <div
-        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+          class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
       >
         <table class="w-full text-left border-collapse min-w-max">
           <thead
-            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+              class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
           >
-            <tr>
-              <th class="px-6 py-4">Matrícula</th>
-              <th class="px-6 py-4">Modelo</th>
-              <th class="px-6 py-4">Fabricante</th>
-              <th class="px-6 py-4">No. Serie</th>
-              <th class="px-6 py-4">Cliente</th>
-              <th class="px-6 py-4">Horas de Vuelo</th>
-              <th class="px-6 py-4">Ciclos</th>
-              <th class="px-6 py-4">Estado</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
-            </tr>
+          <tr>
+            <th class="px-6 py-4">Matrícula</th>
+            <th class="px-6 py-4">Modelo</th>
+            <th class="px-6 py-4">Fabricante</th>
+            <th class="px-6 py-4">No. Serie</th>
+            <th class="px-6 py-4">Cliente</th>
+            <th class="px-6 py-4">Horas de Vuelo</th>
+            <th class="px-6 py-4">Ciclos</th>
+            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-if="aeronaves.length === 0">
-              <td colspan="9" class="px-6 py-8 text-center text-gray-500">
-                Este módulo aún no carga aeronaves desde backend en esta vista.
-              </td>
-            </tr>
+          <tr v-if="aeronaves.length === 0">
+            <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+              Este módulo aún no carga aeronaves desde backend en esta vista.
+            </td>
+          </tr>
 
-            <tr
+          <tr
               v-for="nave in aeronaves"
               :key="nave.matricula"
-              class="hover:bg-gray-50"
-            >
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
-                {{ nave.matricula }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ nave.modeloAeronave }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ nave.marcaAeronave }}
-              </td>
-              <td class="px-6 py-4 text-gray-500 font-mono text-xs">
-                {{ nave.nsAeronave }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">-</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">-</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">-</td>
-              <td class="px-6 py-4 text-gray-600 text-sm">-</td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button
+              class="hover:bg-gray-50 group"
+          >
+            <td class="px-6 py-4 font-bold text-gray-900 text-sm">
+              {{ nave.matricula }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ nave.modeloAeronave }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ nave.marcaAeronave }}
+            </td>
+            <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+              {{ nave.nsAeronave }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">-</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">-</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">-</td>
+            <td class="px-6 py-4 text-gray-600 text-sm">-</td>
+            <td class="px-6 py-4 text-right">
+              <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
                     class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                  >
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button
+                >
+                  <Edit2 class="w-4 h-4" />
+                </button>
+                <button
                     class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- CLIENTES -->
     <div v-else-if="activeTab === 'clientes'" class="space-y-4 animate-fade-in">
       <div
-        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
       >
         <div class="relative w-full sm:w-96">
           <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
           />
           <input
-            v-model="searchQueryClientes"
-            type="text"
-            placeholder="Buscar por nombre, RFC o contacto..."
-            class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+              v-model="searchQueryClientes"
+              type="text"
+              placeholder="Buscar por nombre, RFC o contacto..."
+              class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
           />
         </div>
 
         <button
-          @click="abrirModalCrearCliente"
-          class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md"
+            @click="abrirModalCrearCliente"
+            class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md"
         >
           <Plus class="w-4 h-4" /> Nuevo Cliente
         </button>
       </div>
 
       <div
-        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+          class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
       >
         <table class="w-full text-left border-collapse min-w-max">
           <thead
-            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+              class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
           >
-            <tr>
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Nombre del cliente</th>
-              <th class="px-6 py-4">RFC</th>
-              <th class="px-6 py-4">Contacto</th>
-              <th class="px-6 py-4">Teléfono</th>
-              <th class="px-6 py-4">Correo</th>
-              <th class="px-6 py-4 text-center">Aeronaves</th>
-              <th class="px-6 py-4 text-center">Estado</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
-            </tr>
+          <tr>
+            <th class="px-6 py-4">ID</th>
+            <th class="px-6 py-4">Nombre del cliente</th>
+            <th class="px-6 py-4">RFC</th>
+            <th class="px-6 py-4">Contacto</th>
+            <th class="px-6 py-4">Teléfono</th>
+            <th class="px-6 py-4">Correo</th>
+            <th class="px-6 py-4 text-center">Aeronaves</th>
+            <th class="px-6 py-4 text-center">Estado</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-if="clientesFiltrados.length === 0">
-              <td colspan="9" class="p-8 text-center text-gray-500">
-                No se encontraron clientes.
-              </td>
-            </tr>
+          <tr v-if="clientesFiltrados.length === 0">
+            <td colspan="9" class="p-8 text-center text-gray-500">
+              No se encontraron clientes.
+            </td>
+          </tr>
 
-            <tr
+          <tr
               v-for="cliente in clientesFiltrados"
               :key="cliente.idCliente"
               class="hover:bg-gray-50 group"
-            >
-              <td class="px-6 py-4 text-gray-500 font-mono text-xs">
-                {{ cliente.idCliente }}
-              </td>
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
-                <div class="flex items-center gap-2">
-                  <Building2 class="w-4 h-4 text-gray-400" />{{
-                    cliente.compania
-                  }}
-                </div>
-              </td>
-              <td class="px-6 py-4 text-gray-600 font-mono text-xs">
-                {{ cliente.rfc }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ cliente.contacto }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">
-                {{ cliente.telefono }}
-              </td>
-              <td
+          >
+            <td class="px-6 py-4 text-gray-500 font-mono text-xs">
+              {{ cliente.idCliente }}
+            </td>
+            <td class="px-6 py-4 font-bold text-gray-900 text-sm">
+              <div class="flex items-center gap-2">
+                <Building2 class="w-4 h-4 text-gray-400" />{{
+                  cliente.compania
+                }}
+              </div>
+            </td>
+            <td class="px-6 py-4 text-gray-600 font-mono text-xs">
+              {{ cliente.rfc }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ cliente.contacto }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">
+              {{ cliente.telefono }}
+            </td>
+            <td
                 class="px-6 py-4 text-blue-600 text-sm hover:underline cursor-pointer"
-              >
-                {{ cliente.correo }}
-              </td>
-              <td class="px-6 py-4 text-center">
+            >
+              {{ cliente.correo }}
+            </td>
+            <td class="px-6 py-4 text-center">
                 <span
-                  class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold"
+                    class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold"
                 >
                   {{ cliente.aeronaves || "Pendiente" }}
                 </span>
-              </td>
-              <td class="px-6 py-4 text-center">
+            </td>
+            <td class="px-6 py-4 text-center">
                 <span
-                  :class="[
+                    :class="[
                     'px-2.5 py-1 rounded-full text-xs font-semibold border',
                     (cliente.estado || 'Activo') === 'Activo'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -631,153 +699,183 @@ const tabs = [
                 >
                   {{ cliente.estado || "Activo" }}
                 </span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <div
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div
                   class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                >
-                  <button
+              >
+                <button
                     @click="abrirModalEditarCliente(cliente)"
                     class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                  >
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button
+                >
+                  <Edit2 class="w-4 h-4" />
+                </button>
+                <button
                     @click="eliminarClienteLocal(cliente.idCliente!)"
                     class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- MODELOS -->
     <div v-else-if="activeTab === 'modelos'" class="space-y-4 animate-fade-in">
       <div
-        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
       >
         <div class="relative w-full sm:w-96">
           <Search
-            class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"
           />
           <input
-            v-model="searchQueryModelos"
-            type="text"
-            placeholder="Buscar modelo o marca..."
-            class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+              v-model="searchQueryModelos"
+              type="text"
+              placeholder="Buscar modelo o marca..."
+              class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
           />
         </div>
 
         <button
-          @click="abrirModalCrearModelo"
-          class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md"
+            @click="abrirModalCrearModelo"
+            class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors w-full sm:w-auto shadow-md"
         >
           <Plus class="w-4 h-4" /> Nuevo Modelo
         </button>
       </div>
 
       <div
-        class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
+          class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
       >
         <table class="w-full text-left border-collapse min-w-max">
           <thead
-            class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
+              class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
           >
-            <tr>
-              <th class="px-6 py-4">ID</th>
-              <th class="px-6 py-4">Modelo</th>
-              <th class="px-6 py-4">Fabricante</th>
-              <th class="px-6 py-4 text-right">Acciones</th>
-            </tr>
+          <tr>
+            <th class="px-6 py-4">ID</th>
+            <th class="px-6 py-4">Modelo</th>
+            <th class="px-6 py-4">Fabricante</th>
+            <th class="px-6 py-4 text-right">Acciones</th>
+          </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
-            <tr v-if="modelosFiltrados.length === 0">
-              <td colspan="4" class="p-8 text-center text-gray-500">
-                No se encontraron modelos.
-              </td>
-            </tr>
+          <tr v-if="modelosFiltrados.length === 0">
+            <td colspan="4" class="p-8 text-center text-gray-500">
+              No se encontraron modelos.
+            </td>
+          </tr>
 
-            <tr
+          <tr
               v-for="mod in modelosFiltrados"
               :key="mod.idModelo"
-              class="hover:bg-gray-50"
-            >
-              <td class="px-6 py-4 text-gray-500 text-xs">
-                {{ mod.idModelo }}
-              </td>
-              <td class="px-6 py-4 font-bold text-gray-900 text-sm">
-                {{ mod.modelo }}
-              </td>
-              <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.marca }}</td>
-              <td class="px-6 py-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button
+              class="hover:bg-gray-50 group"
+          >
+            <td class="px-6 py-4 text-gray-500 text-xs">
+              {{ mod.idModelo }}
+            </td>
+            <td class="px-6 py-4 font-bold text-gray-900 text-sm">
+              {{ mod.modelo }}
+            </td>
+            <td class="px-6 py-4 text-gray-600 text-sm">{{ mod.marca }}</td>
+            <td class="px-6 py-4 text-right">
+              <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
                     @click="abrirModalEditarModelo(mod)"
                     class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                  >
-                    <Edit2 class="w-4 h-4" />
-                  </button>
-                  <button
+                >
+                  <Edit2 class="w-4 h-4" />
+                </button>
+                <button
                     @click="eliminarModeloLocal(mod.idModelo!)"
                     class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- REPORTES -->
-    <div
-      v-else
-      class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto animate-fade-in"
-    >
-      <table class="w-full text-left border-collapse min-w-max">
-        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+    <div v-else class="space-y-4 animate-fade-in">
+      <div class="flex justify-end bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <button
+            @click="abrirModalCrearReporte"
+            class="bg-[#0f172a] text-white px-5 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-md"
+        >
+          <Plus class="w-4 h-4" /> Nuevo Reporte
+        </button>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+        <table class="w-full text-left border-collapse min-w-max">
+          <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
           <tr>
-            <th class="px-6 py-4">ID Reporte</th>
-            <th class="px-6 py-4">Aeronave</th>
-            <th class="px-6 py-4">Tipo</th>
+            <th class="px-6 py-4">ID/Código</th>
             <th class="px-6 py-4">Descripción</th>
-            <th class="px-6 py-4">Fecha Programada</th>
-            <th class="px-6 py-4">Horas Límite</th>
-            <th class="px-6 py-4">Ciclos Límite</th>
-            <th class="px-6 py-4">Prioridad</th>
-            <th class="px-6 py-4">Estado</th>
+            <th class="px-6 py-4 text-center">Modelo / Aeronave</th>
             <th class="px-6 py-4 text-right">Acciones</th>
           </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td colspan="10" class="px-6 py-8 text-center text-gray-500">
-              Módulo en preparación.
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+          <tr v-if="reportesAPI.length === 0">
+            <td colspan="4" class="p-8 text-center text-gray-500">No hay reportes programados registrados.</td>
+          </tr>
+          <tr v-for="rep in reportesAPI" :key="rep.codigo" class="hover:bg-gray-50 group">
+            <td class="px-6 py-4 font-mono text-xs text-blue-600">{{ rep.codigo }}</td>
+            <td class="px-6 py-4 text-gray-900 text-sm">{{ rep.descripcion }}</td>
+            <td class="px-6 py-4 text-center text-gray-900 text-sm">
+              {{ rep.modeloAeronave?.modelo || 'Sin Modelo' }}
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <button
+                    @click="abrirModalVerReporte(rep)"
+                    class="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                >
+                  VER
+                </button>
+              </div>
             </td>
           </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <FormNuevoCliente
-      v-if="mostrarModalCliente"
-      :cliente-a-editar="clienteSeleccionado"
-      @cerrar="mostrarModalCliente = false"
-      @guardar="handleGuardarCliente"
+        v-if="mostrarModalCliente"
+        :cliente-a-editar="clienteSeleccionado"
+        @cerrar="mostrarModalCliente = false"
+        @guardar="handleGuardarCliente"
     />
 
     <FormNuevoModelo
-      v-if="mostrarModalModelo"
-      :modelo-a-editar="modeloSeleccionado"
-      @cerrar="mostrarModalModelo = false"
-      @guardar="handleGuardarModelo"
+        v-if="mostrarModalModelo"
+        :modelo-a-editar="modeloSeleccionado"
+        @cerrar="mostrarModalModelo = false"
+        @guardar="handleGuardarModelo"
+    />
+
+    <DetalleOTModal
+        :open="mostrarModalDetalleOT"
+        :ot="otSeleccionadaDetalle"
+        :cargando="cargandoDetalle"
+        @close="mostrarModalDetalleOT = false"
+    />
+
+    <FormNuevaProgramada
+        v-if="mostrarModalReporte"
+        :modelos="modelosAPI"
+        :reporteEditar="reporteSeleccionado"
+        @cerrar="cerrarModalReporte"
+        @guardar="handleGuardarReporte"
     />
   </div>
 </template>

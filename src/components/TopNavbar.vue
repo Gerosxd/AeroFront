@@ -30,23 +30,25 @@ const isMenuOpen = ref(false);
 const sessionUser = computed(() => getSessionUser());
 
 const avatar = computed(() => {
-  const nombre = sessionUser.value?.nombre?.trim();
+  const nombre = sessionUser.value?.Nombre?.trim(); // Mapeado a 'Nombre' con mayúscula
   if (!nombre) return 'U';
 
   return nombre
-    .split(' ')
-    .map((p) => p.charAt(0).toUpperCase())
-    .join('')
-    .slice(0, 2);
+      .split(' ')
+      .map((p) => p.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
 });
 
 const rolTexto = computed(() => {
-  switch (sessionUser.value?.rol) {
+  const rolId = Number(sessionUser.value?.rol);
+
+  switch (rolId) {
     case 1: return 'Administrador';
-    case 2: return 'Planeador';
-    case 3: return 'Técnico';
+    case 2: return 'Encargado de almacén';
+    case 3: return 'Ingeniero';
     case 4: return 'Almacén';
-    case 5: return 'Supervisor';
+    case 5: return 'Director de ingeniería';
     default: return 'Usuario';
   }
 });
@@ -114,6 +116,15 @@ const logout = () => {
           v-if="isMenuOpen"
           class="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 focus:outline-none z-50"
         >
+          <div class="hidden lg:block text-right">
+            <p class="text-sm font-semibold text-white select-none">
+              {{ sessionUser?.nombre || 'Usuario' }}
+            </p>
+            <p class="text-[10px] text-gray-400 select-none">
+              {{ rolTexto }}
+            </p>
+          </div>
+
           <div class="px-4 py-3 border-b border-gray-100 lg:hidden block">
             <p class="text-sm font-semibold text-gray-900">
               {{ sessionUser?.nombre || 'Usuario' }}
