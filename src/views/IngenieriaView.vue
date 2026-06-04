@@ -282,7 +282,7 @@ const cargandoOTs = ref(false);
 const mostrarModalDetalleOT = ref(false);
 const cargandoDetalle = ref(false);
 const otSeleccionadaDetalle = ref<OTDetalle | null>(null);
-
+import type { OTDetalle } from "../types/ot";
 const cargarOTs = async () => {
   try {
     cargandoOTs.value = true;

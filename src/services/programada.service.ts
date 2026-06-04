@@ -2,7 +2,8 @@
 import axios from 'axios';
 import type { TareaProgramada } from '../types/programada';
 
-const API_URL = 'http://localhost:8080/api/programadas';
+const API_URL = 'https://mango-grass-0de474f1e.6.azurestaticapps.net/';
+                'http://localhost:8080/api/programadas';
 
 export const programadaService = {
     async listarTodas() {
