@@ -1,5 +1,12 @@
 {
+  "routes": [
+    {
+      "route": "/api/*",
+      "rewrite": "https://aerotallerback-f4h2c4f8gqcqefen.mexicocentral-01.azurewebsites.net/api/*"
+    }
+  ],
   "navigationFallback": {
-    "rewrite": "/index.html"
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*.{css,js}", "/favicon.ico"]
   }
 }
