@@ -1,17 +1,15 @@
-import axios from 'axios';
+// SOLUCIÓN: Importamos tu instancia configurada que ya sabe viajar al App Service de Azure
+import http from './http'; // Ajusta la ruta relativa hacia tu archivo http.ts si es necesario
 import type { TareaProgramada } from '../types/programada';
-
-// SOLUCIÓN: Usar la ruta relativa de la API para producción, o alternar según el entorno
-const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:8080/api/programadas'
-    : '/api/programadas';
 
 export const programadaService = {
     async listarTodas() {
-        const response = await axios.get<TareaProgramada[]>(API_URL);
+        // Al usar 'http', hereda automáticamente la baseURL del backend correcto
+        const response = await http.get<TareaProgramada[]>('/api/programadas');
         return response.data;
     },
     async registrar(tarea: TareaProgramada) {
-        return await axios.post(API_URL, tarea);
+        // Esto enviará el POST directo a https://aerotallerback-...azurewebsites.net/api/programadas
+        return await http.post('/api/programadas', tarea);
     }
 };
