@@ -86,14 +86,18 @@ const eliminarClienteLocal = async (idCliente: number) => {
 };
 
 const handleGuardarCliente = async (
-  datos: PayloadClienteBackend & { esEdicion?: boolean },
+    datos: PayloadClienteBackend & { esEdicion?: boolean },
 ) => {
   try {
-    if (datos.esEdicion && datos.idCliente) {
-      await actualizarCliente(datos.idCliente, datos);
+    // SOLUCIÓN: Extraemos 'esEdicion' para que NO se envíe en el JSON hacia el Backend de Java
+    const { esEdicion, ...payloadParaBackend } = datos;
+
+    if (esEdicion && datos.idCliente) {
+      await actualizarCliente(datos.idCliente, payloadParaBackend);
       alert("El cliente ha sido actualizado correctamente.");
     } else {
-      await guardarCliente(datos);
+      // Enviamos el objeto limpio sin campos extraños
+      await guardarCliente(payloadParaBackend);
       alert("El cliente ha sido registrado correctamente.");
     }
     await cargarClientes();
