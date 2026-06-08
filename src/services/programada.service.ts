@@ -1,9 +1,10 @@
-
 import axios from 'axios';
 import type { TareaProgramada } from '../types/programada';
 
-const API_URL = 'https://mango-grass-0de474f1e.6.azurestaticapps.net/';
-                'http://localhost:8080/api/programadas';
+// SOLUCIÓN: Usar la ruta relativa de la API para producción, o alternar según el entorno
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080/api/programadas'
+    : '/api/programadas';
 
 export const programadaService = {
     async listarTodas() {
@@ -11,7 +12,6 @@ export const programadaService = {
         return response.data;
     },
     async registrar(tarea: TareaProgramada) {
-        // [cite: 10, 11]
         return await axios.post(API_URL, tarea);
     }
 };
