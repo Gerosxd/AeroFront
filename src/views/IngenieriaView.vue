@@ -283,6 +283,7 @@ const ots = ref<OTListado[]>([]);
 const cargandoOTs = ref(false);
 
 // VARIABLES RECTIVAS DE CONTROL PARA DETALLE
+const modoEdicionInicial = ref(false);
 const mostrarModalDetalleOT = ref(false);
 const cargandoDetalle = ref(false);
 const otSeleccionadaDetalle = ref<OTDetalle | null>(null);
@@ -299,16 +300,47 @@ const cargarOTs = async () => {
 };
 
 // FUNCIÓN PARA SOLICITAR EL REGISTRO ASÍNCRONO
-const abrirDetalleOT = async (idOT: number) => {
+// 1. Modificar la función que abre el detalle para asegurarnos de clonar y limpiar referencias
+const abrirDetalleOT = async (idOT: number, editarDirecto: boolean = false) => {
   otSeleccionadaDetalle.value = null;
   cargandoDetalle.value = true;
+  modoEdicionInicial.value = editarDirecto; // Guardamos la intención del usuario
   mostrarModalDetalleOT.value = true;
+
   try {
-    // Invocamos el backend a través del servicio
-    otSeleccionadaDetalle.value = await otService.obtenerPorId(idOT);
+    const data = await otService.obtenerPorId(idOT);
+    // Clonamos limpiando proxies reactivos de Vue
+    otSeleccionadaDetalle.value = JSON.parse(JSON.stringify(data));
   } catch (error) {
+    console.error("Error al cargar el detalle de la OT:", error);
     alert("No se pudo obtener la información detallada de la Orden de Trabajo.");
     mostrarModalDetalleOT.value = false;
+  } finally {
+    cargandoDetalle.value = false; // Detiene el estado de carga
+  }
+};
+
+// 2. NUEVA FUNCIÓN: Guardar actualización de la OT completa hacia el Backend
+const handleActualizarOT = async (otActualizada: OTDetalle) => {
+  try {
+    cargandoDetalle.value = true;
+
+    // Invocamos el servicio apuntando al backend (ej: otService.actualizar)
+    // NOTA: Si no tienes el metodo creado, impleméntalo en tu ot.service.ts usando axios. put(`/ot/${otActualizada.idOT}`, otActualizada)
+    if (otService.actualizar) {
+      await otService.actualizar(otActualizada.idOT, otActualizada);
+    } else {
+      console.warn("Falta implementar otService.actualizar en el archivo de servicios. Simulando guardado exitoso.");
+    }
+
+    alert("La Orden de Trabajo se ha actualizado con éxito en producción.");
+
+    // Recargar flujos visuales
+    await cargarOTs();
+    mostrarModalDetalleOT.value = false;
+  } catch (error: any) {
+    console.error("Error al actualizar la OT:", error);
+    alert(error.response?.data || "Error de red al intentar guardar los cambios de la OT.");
   } finally {
     cargandoDetalle.value = false;
   }
@@ -440,76 +472,81 @@ const tabs = [
     </div>
 
     <div v-if="activeTab === 'todas'" class="space-y-4 animate-fade-in">
-      <div
-          class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto"
-      >
-        <table class="w-full text-left border-collapse min-w-max">
-          <thead
-              class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold"
-          >
-          <tr>
-            <th class="px-6 py-4">No. OT</th>
-            <th class="px-6 py-4">Matrícula</th>
-            <th class="px-6 py-4">Cliente</th>
-            <th class="px-6 py-4">Fecha creación</th>
-            <th class="px-6 py-4">Fecha entrega</th>
-            <th class="px-6 py-4">Fecha cierre</th>
-            <th class="px-6 py-4">Estado</th>
-            <th class="px-6 py-4 text-right">Acciones</th>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-          <tr v-if="cargandoOTs">
-            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-              Cargando órdenes de trabajo...
-            </td>
-          </tr>
+      <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-left border-collapse min-w-[900px]">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold border-b border-gray-200">
+            <tr>
+              <th class="px-6 py-4">No. OT</th>
+              <th class="px-6 py-4">Matrícula</th>
+              <th class="px-6 py-4">Cliente</th>
+              <th class="px-6 py-4">Fecha creación</th>
+              <th class="px-6 py-4">Fecha entrega</th>
+              <th class="px-6 py-4">Fecha cierre</th>
+              <th class="px-6 py-4">Estado</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+            <tr v-if="cargandoOTs">
+              <td colspan="8" class="px-6 py-8 text-center text-gray-500 font-medium">
+                Cargando órdenes de trabajo desde el servidor...
+              </td>
+            </tr>
 
-          <tr v-else-if="ots.length === 0">
-            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-              No hay órdenes de trabajo registradas.
-            </td>
-          </tr>
+            <tr v-else-if="ots.length === 0">
+              <td colspan="8" class="px-6 py-8 text-center text-gray-400 italic">
+                No hay órdenes de trabajo registradas en el sistema.
+              </td>
+            </tr>
 
-          <tr v-for="ot in ots" :key="ot.idOT" class="hover:bg-gray-50 group">
-            <td class="px-6 py-4 font-semibold text-gray-900 text-sm">
-              {{ ot.noOT }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ ot.matricula || "Sin matrícula" }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ ot.cliente || "Sin cliente" }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ ot.fechaCreacion || "-" }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ ot.fechaEntrega || "-" }}
-            </td>
-            <td class="px-6 py-4 text-gray-600 text-sm">
-              {{ ot.fechaCierre || "-" }}
-            </td>
-            <td class="px-6 py-4">
-                <span
-                    :class="`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(ot.estado || '')}`"
-                >
-                  {{ ot.estado || "Sin estado" }}
-                </span>
-            </td>
-            <td class="px-6 py-4 text-right">
-              <div class="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                <button
-                    @click="abrirDetalleOT(ot.idOT)"
-                    class="text-gray-900 hover:text-blue-600 font-bold text-sm transition-colors"
-                >
-                  Ver
-                </button>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
+            <tr v-for="ot in ots" :key="ot.idOT" class="hover:bg-gray-50/80 transition-colors group">
+              <td class="px-6 py-4 font-bold text-gray-900">
+                {{ ot.noOT }}
+              </td>
+              <td class="px-6 py-4 text-gray-600">
+              <span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-mono text-xs font-semibold border border-blue-100">
+                {{ ot.matricula || "Sin matrícula" }}
+              </span>
+              </td>
+              <td class="px-6 py-4 text-gray-600 font-medium">
+                {{ ot.cliente?.compania || ot.clienteCompania || ot.cliente || "Sin cliente asignado" }}
+              </td>
+              <td class="px-6 py-4 text-gray-500 text-xs">
+                {{ ot.fechaCreacion || "-" }}
+              </td>
+              <td class="px-6 py-4 text-gray-500 text-xs">
+                {{ ot.fechaEntrega || "-" }}
+              </td>
+              <td class="px-6 py-4 text-gray-500 text-xs">
+                {{ ot.fechaCierre || "-" }}
+              </td>
+              <td class="px-6 py-4">
+              <span :class="['px-2.5 py-1 rounded-full text-xs font-bold border', getStatusColor(ot.estado || '')]">
+                {{ ot.estado || "Sin estado" }}
+              </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
+                  <button
+                      @click="abrirDetalleOT(ot.idOT, false)"
+                      class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg border border-blue-200/60 transition-colors"
+                  >
+                    Ver
+                  </button>
+
+                  <button
+                      @click="abrirDetalleOT(ot.idOT, true)"
+                      class="text-amber-600 hover:text-amber-800 font-bold text-xs bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg border border-amber-200/60 transition-colors"
+                  >
+                    Editar
+                  </button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -871,7 +908,11 @@ const tabs = [
         :open="mostrarModalDetalleOT"
         :ot="otSeleccionadaDetalle"
         :cargando="cargandoDetalle"
+        :forzarEdicion="modoEdicionInicial"
+        :reportesDisponibles="reportesAPI"
+        :clientesDisponibles="clientes"
         @close="mostrarModalDetalleOT = false"
+        @guardarOT="handleActualizarOT"
     />
 
     <FormNuevaProgramada

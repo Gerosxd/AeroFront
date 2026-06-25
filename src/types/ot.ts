@@ -67,3 +67,51 @@ export interface OTListado {
     fechaCierre: string | null
     estado: string | null
 }
+
+export interface TareaMantenimientoResponse {
+    idTareaOT: number;
+    codigo: string;
+    descripcion: string;
+    tecnicos: string | null;
+    horasTotales: number;
+    tipoTarea: string | null;
+}
+
+export interface DiscrepanciaResponse {
+    idOTDiscrepancia: number;
+    codigo: string;
+    descripcion: string;
+    estatus: string;
+    acciones: string | null;
+}
+
+export interface OTDetalle {
+    idOT: number;
+    noOT: string;
+    matricula: string;
+    modeloAeronave: string | null;
+    clienteCompania: string;
+    clienteContacto: string | null;
+    comentarioCliente: string | null;
+    estado: string;
+    fechaCreacion: string;
+    fechaApertura: string;
+    fechaEntrega: string | null;
+    fechaCierre: string | null;
+
+    // Contadores de Ingeniería
+    horasTotales: number;
+    ciclosTotales: number;
+    tiempoMotor1: number | null;
+    cicloMotor1: number | null;
+    tiempoMotor2: number | null;
+    cicloMotor2: number | null;
+    tiempoMotor3: number | null;
+    cicloMotor3: number | null;
+    tiempoAPU: number | null;
+    cicloAPU: number | null;
+
+    // Colecciones hijas relacionales
+    tareasMantenimiento: TareaMantenimientoResponse[];
+    discrepancias: DiscrepanciaResponse[];
+}

@@ -5,6 +5,7 @@ import type {
     CrearOTResponse,
     SiguienteNoOTResponse,
     OTListado,
+    OTDetalle,
 } from '../types/ot'
 
 
@@ -30,9 +31,14 @@ class OTService {
         return data
     }
 
-    async obtenerPorId(idOT: number): Promise<any> {
+    async obtenerPorId(idOT: number): Promise<OTDetalle> {
         const { data } = await http.get<any>(`/api/ots/${idOT}`)
         return data
+    }
+
+    // NUEVO METODO: Para actualizar la Orden de Trabajo modificada en el modal
+    async actualizar(idOT: number, payload: OTDetalle): Promise<void> {
+        await http.put(`/api/ots/${idOT}`, payload)
     }
 }
 
