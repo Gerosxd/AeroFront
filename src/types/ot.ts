@@ -75,6 +75,11 @@ export interface TareaMantenimientoResponse {
     tecnicos: string | null;
     horasTotales: number;
     tipoTarea: string | null;
+    // Campos complementarios T-08
+    tipoServicio: string | null;
+    intervalo: string | null;
+    requiereRII: string | null;
+    parteAsociada: string | null;
 }
 
 export interface DiscrepanciaResponse {
@@ -83,6 +88,14 @@ export interface DiscrepanciaResponse {
     descripcion: string;
     estatus: string;
     acciones: string | null;
+    // Campos complementarios T-08
+    aeronavegable: string | null;
+    fechaAutorizada: string | null;
+    accionCorrectiva: string | null;
+    fechaLiberacion: string | null;
+    efectuadoPor: string | null;
+    inspeccionadoPor: string | null;
+    parteAsociada: string | null;
 }
 
 export interface OTDetalle {
