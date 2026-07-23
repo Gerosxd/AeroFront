@@ -59,6 +59,19 @@ const form = reactive<CrearOTRequest>({
 
   comentarioCliente: '',
 
+  // P-00: Carátula AG-145-03
+  tipoMantenimiento: null,
+  modalidadMantenimiento: null,
+  comentarioTaller: null,
+  componenteDescripcion: null,
+  componenteNumeroParte: null,
+  componenteNumeroSerie: null,
+  componenteCantidad: null,
+  componenteHoras: null,
+  componenteCiclos: null,
+  componenteAeronaveAsociada: null,
+  componenteHorasCiclosRemocion: null,
+
   tareasMantenimiento: [
     { codigo: '', descripcion: '', tecnicos: '', horasTotales: null, tipoTarea: 'Programada' }
   ],
@@ -178,6 +191,18 @@ function resetFormularioPrincipal() {
 
   form.comentarioCliente = ''
 
+  form.tipoMantenimiento = null
+  form.modalidadMantenimiento = null
+  form.comentarioTaller = null
+  form.componenteDescripcion = null
+  form.componenteNumeroParte = null
+  form.componenteNumeroSerie = null
+  form.componenteCantidad = null
+  form.componenteHoras = null
+  form.componenteCiclos = null
+  form.componenteAeronaveAsociada = null
+  form.componenteHorasCiclosRemocion = null
+
   form.tareasMantenimiento = [
     { codigo: '', descripcion: '', tecnicos: '', horasTotales: null, tipoTarea: 'Programada' }
   ]
@@ -290,6 +315,18 @@ async function crearOT() {
       cicloAPU: form.cicloAPU,
 
       comentarioCliente: form.comentarioCliente,
+
+      tipoMantenimiento: form.tipoMantenimiento,
+      modalidadMantenimiento: form.modalidadMantenimiento,
+      comentarioTaller: form.comentarioTaller,
+      componenteDescripcion: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteDescripcion : null,
+      componenteNumeroParte: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteNumeroParte : null,
+      componenteNumeroSerie: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteNumeroSerie : null,
+      componenteCantidad: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteCantidad : null,
+      componenteHoras: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteHoras : null,
+      componenteCiclos: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteCiclos : null,
+      componenteAeronaveAsociada: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteAeronaveAsociada : null,
+      componenteHorasCiclosRemocion: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteHorasCiclosRemocion : null,
 
       tareasMantenimiento: form.tareasMantenimiento,
       discrepancias: form.discrepancias,
@@ -408,6 +445,68 @@ onMounted(async () => {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Ciclos totales</label>
               <input v-model.number="form.ciclosTotales" type="number" min="0" step="1" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" />
+            </div>
+          </div>
+        </section>
+
+        <!-- P-00: Tipo de Orden de Trabajo (Carátula AG-145-03) -->
+        <section class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+          <h3 class="text-lg font-semibold text-slate-900">Tipo de Orden de Trabajo</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de servicio</label>
+              <select v-model="form.tipoMantenimiento" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                <option :value="null">Seleccionar tipo</option>
+                <option value="AERONAVE">Mantenimiento de Aeronave</option>
+                <option value="COMPONENTE">Reparación de Componente</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+              <select v-model="form.modalidadMantenimiento" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                <option :value="null">Seleccionar modalidad</option>
+                <option value="PROGRAMADO">Mantenimiento Programado</option>
+                <option value="NO_PROGRAMADO">Mantenimiento No Programado</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Bloque de componente: solo cuando es Reparación de Componente -->
+          <div v-if="form.tipoMantenimiento === 'COMPONENTE'" class="border border-blue-200 bg-blue-50/40 rounded-lg p-4 space-y-3">
+            <h4 class="text-sm font-semibold text-slate-800">Información de Componente</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div class="lg:col-span-2">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+                <input v-model="form.componenteDescripcion" type="text" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
+                <input v-model.number="form.componenteCantidad" type="number" min="1" step="1" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Número de parte</label>
+                <input v-model="form.componenteNumeroParte" type="text" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Número de serie</label>
+                <input v-model="form.componenteNumeroSerie" type="text" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Horas totales</label>
+                <input v-model.number="form.componenteHoras" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Ciclos totales</label>
+                <input v-model.number="form.componenteCiclos" type="number" min="0" step="1" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Aeronave asociada (matrícula)</label>
+                <input v-model="form.componenteAeronaveAsociada" type="text" placeholder="Ej. XA-ABC" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Horas / Ciclos al momento de remoción</label>
+                <input v-model="form.componenteHorasCiclosRemocion" type="text" placeholder="Ej. 1250.5 hrs / 830 ciclos" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
+              </div>
             </div>
           </div>
         </section>

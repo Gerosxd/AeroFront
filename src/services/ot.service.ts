@@ -40,6 +40,46 @@ class OTService {
     async actualizar(idOT: number, payload: OTDetalle): Promise<void> {
         await http.put(`/api/ots/${idOT}`, payload)
     }
+
+    // P-02: Descarga/abre la carátula AG-145-03 en PDF
+    async obtenerCaratulaPdf(idOT: number): Promise<Blob> {
+        const { data } = await http.get(`/api/ots/${idOT}/caratula-pdf`, {
+            responseType: 'blob',
+        })
+        return data
+    }
+
+    // P-03: Hoja de Servicio AG-145-04 de una tarea específica
+    async obtenerHojaServicioPdf(idOT: number, idTarea: number): Promise<Blob> {
+        const { data } = await http.get(`/api/ots/${idOT}/hoja-servicio-pdf/${idTarea}`, {
+            responseType: 'blob',
+        })
+        return data
+    }
+
+    // P-03: Hojas de Servicio de todas las tareas de la OT
+    async obtenerHojasServicioPdf(idOT: number): Promise<Blob> {
+        const { data } = await http.get(`/api/ots/${idOT}/hojas-servicio-pdf`, {
+            responseType: 'blob',
+        })
+        return data
+    }
+
+    // P-04: Formato AG-145-12 de una discrepancia específica
+    async obtenerDiscrepanciaPdf(idOT: number, idDiscrepancia: number): Promise<Blob> {
+        const { data } = await http.get(`/api/ots/${idOT}/discrepancia-pdf/${idDiscrepancia}`, {
+            responseType: 'blob',
+        })
+        return data
+    }
+
+    // P-04: Formato AG-145-12 con todas las discrepancias de la OT
+    async obtenerDiscrepanciasPdf(idOT: number): Promise<Blob> {
+        const { data } = await http.get(`/api/ots/${idOT}/discrepancias-pdf`, {
+            responseType: 'blob',
+        })
+        return data
+    }
 }
 
 export default new OTService()

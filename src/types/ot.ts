@@ -47,6 +47,19 @@ export interface CrearOTRequest {
 
     comentarioCliente: string
 
+    // P-00: Carátula AG-145-03
+    tipoMantenimiento: string | null
+    modalidadMantenimiento: string | null
+    comentarioTaller: string | null
+    componenteDescripcion: string | null
+    componenteNumeroParte: string | null
+    componenteNumeroSerie: string | null
+    componenteCantidad: number | null
+    componenteHoras: number | null
+    componenteCiclos: number | null
+    componenteAeronaveAsociada: string | null
+    componenteHorasCiclosRemocion: string | null
+
     tareasMantenimiento: TareaMantenimientoRequest[]
     discrepancias: DiscrepanciaOTRequest[]
 }
@@ -80,6 +93,13 @@ export interface TareaMantenimientoResponse {
     intervalo: string | null;
     requiereRII: string | null;
     parteAsociada: string | null;
+    // Campos P-03 Hoja de Servicio AG-145-04
+    numeroParte: string | null;
+    numeroSerie: string | null;
+    accionCorrectiva: string | null;
+    efectuadoPor: string | null;
+    inspeccionadoPor: string | null;
+    fechaCumplimiento: string | null;
 }
 
 export interface DiscrepanciaResponse {
@@ -88,6 +108,9 @@ export interface DiscrepanciaResponse {
     descripcion: string;
     estatus: string;
     acciones: string | null;
+    // Campos P-00 plantilla AG-145-12
+    tipoDiscrepancia: string | null;
+    hhEstimadas: number | null;
     // Campos complementarios T-08
     aeronavegable: string | null;
     fechaAutorizada: string | null;
@@ -106,6 +129,18 @@ export interface OTDetalle {
     clienteCompania: string;
     clienteContacto: string | null;
     comentarioCliente: string | null;
+    // Campos P-00 plantilla AG-145-03 (carátula)
+    tipoMantenimiento: string | null;
+    modalidadMantenimiento: string | null;
+    comentarioTaller: string | null;
+    componenteDescripcion: string | null;
+    componenteNumeroParte: string | null;
+    componenteNumeroSerie: string | null;
+    componenteCantidad: number | null;
+    componenteHoras: number | null;
+    componenteCiclos: number | null;
+    componenteAeronaveAsociada: string | null;
+    componenteHorasCiclosRemocion: string | null;
     estado: string;
     fechaCreacion: string;
     fechaApertura: string;
