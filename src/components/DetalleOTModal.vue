@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import otService from '../services/ot.service';
 import { X, Calendar, Wrench, ShieldAlert, ClipboardList, Edit3, Check, RotateCcw, PlusCircle, Search, Printer, Pencil, Trash2 } from 'lucide-vue-next';
 import type { OTDetalle, TareaMantenimientoResponse, DiscrepanciaResponse } from '../types/ot';
 import type { TareaProgramada } from '../types/programada';
@@ -46,6 +47,12 @@ const agregarTareaDesdeReporte = (reporte: TareaProgramada) => {
     intervalo: null,
     requiereRII: null,
     parteAsociada: null,
+    numeroParte: null,
+    numeroSerie: null,
+    accionCorrectiva: null,
+    efectuadoPor: null,
+    inspeccionadoPor: null,
+    fechaCumplimiento: null,
   });
   mostrarPopupAgregarTarea.value = false;
   filtroPopupReportes.value = '';
@@ -68,6 +75,8 @@ const agregarDiscrepancia = () => {
     descripcion: discrepanciaForm.value.descripcion,
     estatus: discrepanciaForm.value.estatus,
     acciones: discrepanciaForm.value.acciones,
+    tipoDiscrepancia: null,
+    hhEstimadas: null,
     aeronavegable: null,
     fechaAutorizada: null,
     accionCorrectiva: null,
@@ -104,9 +113,80 @@ const discrepanciasFiltradas = computed(() => {
   );
 });
 
-// --- T-06: IMPRESIÓN ---
-const imprimirCaratula = () => {
-  window.print();
+// --- T-06 / P-02 / P-03: IMPRESIÓN ---
+const generandoPdf = ref(false);
+
+const abrirPdf = async (fn: () => Promise<Blob>, errorMsg: string) => {
+  try {
+    generandoPdf.value = true;
+    const blob = await fn();
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+  } catch (e) {
+    console.error(errorMsg, e);
+    alert(errorMsg);
+  } finally {
+    generandoPdf.value = false;
+  }
+};
+
+// P-02: Carátula de la OT (AG-145-03)
+const imprimirCaratula = async () => {
+  if (!otEditable.value?.idOT) return;
+  const id = otEditable.value.idOT;
+  await abrirPdf(
+    () => otService.obtenerCaratulaPdf(id),
+    'No se pudo generar la carátula de la OT. Verifica que la OT esté guardada.'
+  );
+};
+
+// P-03: Hoja de Servicio de una tarea (AG-145-04)
+const imprimirHojaServicio = async (tarea: TareaMantenimientoResponse) => {
+  if (!otEditable.value?.idOT) return;
+  if (!tarea.idTareaOT) {
+    alert('Guarda los cambios de la OT antes de imprimir la Hoja de Servicio de esta tarea.');
+    return;
+  }
+  const id = otEditable.value.idOT;
+  await abrirPdf(
+    () => otService.obtenerHojaServicioPdf(id, tarea.idTareaOT),
+    'No se pudo generar la Hoja de Servicio de la tarea.'
+  );
+};
+
+// P-03: Hojas de Servicio de todas las tareas
+const imprimirTodasHojasServicio = async () => {
+  if (!otEditable.value?.idOT) return;
+  const id = otEditable.value.idOT;
+  await abrirPdf(
+    () => otService.obtenerHojasServicioPdf(id),
+    'No se pudieron generar las Hojas de Servicio.'
+  );
+};
+
+// P-04: Formato de una discrepancia (AG-145-12)
+const imprimirDiscrepancia = async (discrepancia: DiscrepanciaResponse) => {
+  if (!otEditable.value?.idOT) return;
+  if (!discrepancia.idOTDiscrepancia) {
+    alert('Guarda los cambios de la OT antes de imprimir esta discrepancia.');
+    return;
+  }
+  const id = otEditable.value.idOT;
+  await abrirPdf(
+    () => otService.obtenerDiscrepanciaPdf(id, discrepancia.idOTDiscrepancia),
+    'No se pudo generar el formato de la discrepancia.'
+  );
+};
+
+// P-04: Formato con todas las discrepancias
+const imprimirTodasDiscrepancias = async () => {
+  if (!otEditable.value?.idOT) return;
+  const id = otEditable.value.idOT;
+  await abrirPdf(
+    () => otService.obtenerDiscrepanciasPdf(id),
+    'No se pudo generar el formato de Discrepancias.'
+  );
 };
 
 // --- T-07: ACCIONES POR FILA ---
@@ -125,28 +205,38 @@ const mostrarEdicionTarea = ref<number | null>(null);
 const mostrarEdicionDiscrepancia = ref<number | null>(null);
 
 const abrirEdicionTarea = (idx: number) => {
-  // Inicializar campos complementarios si están vacíos
+  // Inicializa los campos complementarios directamente sobre el modelo,
+  // para que se envíen al backend al guardar.
   const t = otEditable.value?.tareasMantenimiento[idx];
   if (t) {
-    if (!t.tipoServicio) t.tipoServicio = '';
-    if (!t.intervalo) t.intervalo = '';
-    if (!t.requiereRII) t.requiereRII = 'NO';
-    if (!t.parteAsociada) t.parteAsociada = '';
+    if (t.tipoServicio == null) t.tipoServicio = '';
+    if (t.intervalo == null) t.intervalo = '';
+    if (t.tipoTarea == null) t.tipoTarea = '';
+    if (t.requiereRII == null) t.requiereRII = 'NO';
+    if (t.parteAsociada == null) t.parteAsociada = '';
+    // P-03: Hoja de Servicio
+    if (t.numeroParte == null) t.numeroParte = '';
+    if (t.numeroSerie == null) t.numeroSerie = '';
+    if (t.accionCorrectiva == null) t.accionCorrectiva = '';
+    if (t.efectuadoPor == null) t.efectuadoPor = '';
+    if (t.inspeccionadoPor == null) t.inspeccionadoPor = '';
+    if (t.fechaCumplimiento == null) t.fechaCumplimiento = '';
   }
   mostrarEdicionTarea.value = idx;
 };
 
 const abrirEdicionDiscrepancia = (idx: number) => {
-  // Inicializar campos complementarios si están vacíos
   const d = otEditable.value?.discrepancias[idx];
   if (d) {
-    if (!d.aeronavegable) d.aeronavegable = 'NO';
-    if (!d.fechaAutorizada) d.fechaAutorizada = '';
-    if (!d.accionCorrectiva) d.accionCorrectiva = '';
-    if (!d.fechaLiberacion) d.fechaLiberacion = '';
-    if (!d.efectuadoPor) d.efectuadoPor = '';
-    if (!d.inspeccionadoPor) d.inspeccionadoPor = '';
-    if (!d.parteAsociada) d.parteAsociada = '';
+    if (d.aeronavegable == null) d.aeronavegable = 'NO';
+    if (d.fechaAutorizada == null) d.fechaAutorizada = '';
+    if (d.accionCorrectiva == null) d.accionCorrectiva = '';
+    if (d.fechaLiberacion == null) d.fechaLiberacion = '';
+    if (d.efectuadoPor == null) d.efectuadoPor = '';
+    if (d.inspeccionadoPor == null) d.inspeccionadoPor = '';
+    if (d.parteAsociada == null) d.parteAsociada = '';
+    if (d.tipoDiscrepancia === undefined) d.tipoDiscrepancia = null;
+    if (d.hhEstimadas === undefined) d.hhEstimadas = null;
   }
   mostrarEdicionDiscrepancia.value = idx;
 };
@@ -330,6 +420,74 @@ const getStatusColor = (estado: string) => {
             </div>
           </div>
 
+          <!-- ===================== P-00: DATOS DE CARÁTULA (AG-145-03) ===================== -->
+          <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3 text-sm">
+            <h3 class="font-bold text-gray-800 border-b pb-2 text-xs uppercase flex items-center gap-1.5">
+              <ClipboardList class="w-4 h-4 text-slate-500" /> Datos de Carátula
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Tipo de servicio</label>
+                <select v-model="otEditable.tipoMantenimiento" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400">
+                  <option :value="null">— Sin definir —</option>
+                  <option value="AERONAVE">Mantenimiento de Aeronave</option>
+                  <option value="COMPONENTE">Reparación de Componente</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Modalidad</label>
+                <select v-model="otEditable.modalidadMantenimiento" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400">
+                  <option :value="null">— Sin definir —</option>
+                  <option value="PROGRAMADO">Mantenimiento Programado</option>
+                  <option value="NO_PROGRAMADO">Mantenimiento No Programado</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Comentarios del Responsable de Taller</label>
+                <textarea v-model="otEditable.comentarioTaller" rows="2" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400 resize-none"></textarea>
+              </div>
+            </div>
+
+            <!-- Bloque de componente: solo para Reparación de Componente -->
+            <div v-if="otEditable.tipoMantenimiento === 'COMPONENTE'" class="border border-blue-200 bg-blue-50/40 rounded-lg p-3 space-y-2">
+              <span class="text-[11px] font-bold text-slate-700 uppercase">Información de Componente</span>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Descripción</label>
+                  <input v-model="otEditable.componenteDescripcion" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Cantidad</label>
+                  <input v-model.number="otEditable.componenteCantidad" type="number" min="1" step="1" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">No. de parte</label>
+                  <input v-model="otEditable.componenteNumeroParte" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">No. de serie</label>
+                  <input v-model="otEditable.componenteNumeroSerie" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Horas totales</label>
+                  <input v-model.number="otEditable.componenteHoras" type="number" min="0" step="0.01" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Ciclos totales</label>
+                  <input v-model.number="otEditable.componenteCiclos" type="number" min="0" step="1" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Aeronave asociada</label>
+                  <input v-model="otEditable.componenteAeronaveAsociada" type="text" placeholder="Matrícula" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Horas/Ciclos remoción</label>
+                  <input v-model="otEditable.componenteHorasCiclosRemocion" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- ===================== TAREAS DE MANTENIMIENTO ===================== -->
           <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3 text-sm">
             <!-- T-03: Header con botón (+) -->
@@ -358,9 +516,10 @@ const getStatusColor = (estado: string) => {
                 />
               </div>
               <button
-                @click="imprimirCaratula"
-                class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
-                title="Imprimir todas las tareas"
+                @click="imprimirTodasHojasServicio"
+                :disabled="generandoPdf"
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-60"
+                title="Imprimir Hojas de Servicio de todas las tareas"
               >
                 <Printer class="w-3.5 h-3.5" /> Imprimir
               </button>
@@ -393,7 +552,7 @@ const getStatusColor = (estado: string) => {
                         <button @click="abrirEdicionTarea(idx)" class="p-1 rounded hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" title="Editar datos complementarios">
                           <Pencil class="w-3.5 h-3.5" />
                         </button>
-                        <button @click="imprimirCaratula" class="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Imprimir esta tarea">
+                        <button @click="imprimirHojaServicio(t)" :disabled="generandoPdf" class="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50" title="Imprimir Hoja de Servicio de esta tarea">
                           <Printer class="w-3.5 h-3.5" />
                         </button>
                         <button @click="eliminarTarea(idx)" class="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors" title="Descartar tarea">
@@ -441,6 +600,39 @@ const getStatusColor = (estado: string) => {
                           <div class="sm:col-span-2">
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Parte / componente / material asociado</label>
                             <input v-model="t.parteAsociada" type="text" placeholder="Pendiente conexión con almacén" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                          </div>
+                        </div>
+
+                        <!-- P-03: Datos de la Hoja de Servicio AG-145-04 -->
+                        <div class="border-t border-blue-200 pt-2">
+                          <span class="text-[10px] font-bold text-blue-800 uppercase">Hoja de Servicio (AG-145-04)</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">No. de parte</label>
+                            <input v-model="t.numeroParte" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">No. de serie</label>
+                            <input v-model="t.numeroSerie" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Efectuado por</label>
+                            <input v-model="t.efectuadoPor" type="text" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">
+                              Inspeccionado por<span v-if="t.requiereRII === 'SI'" class="text-red-500" title="Obligatorio para tareas RII"> *</span>
+                            </label>
+                            <input v-model="t.inspeccionadoPor" type="text" :class="['w-full bg-white border rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400', t.requiereRII === 'SI' && !t.inspeccionadoPor ? 'border-red-300' : 'border-gray-300']" />
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Fecha de cumplimiento</label>
+                            <input v-model="t.fechaCumplimiento" type="date" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                          </div>
+                          <div class="col-span-2 sm:col-span-3 lg:col-span-4">
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Acción correctiva</label>
+                            <textarea v-model="t.accionCorrectiva" rows="3" placeholder="Trabajo realizado, con referencias a manuales o procedimientos utilizados..." class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400 resize-none"></textarea>
                           </div>
                         </div>
                       </div>
@@ -498,9 +690,10 @@ const getStatusColor = (estado: string) => {
                 />
               </div>
               <button
-                @click="imprimirCaratula"
-                class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
-                title="Imprimir todas las discrepancias"
+                @click="imprimirTodasDiscrepancias"
+                :disabled="generandoPdf"
+                class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-60"
+                title="Imprimir formato AG-145-12 con todas las discrepancias"
               >
                 <Printer class="w-3.5 h-3.5" /> Imprimir
               </button>
@@ -531,7 +724,7 @@ const getStatusColor = (estado: string) => {
                         <button @click="abrirEdicionDiscrepancia(idx)" class="p-1 rounded hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" title="Editar datos complementarios">
                           <Pencil class="w-3.5 h-3.5" />
                         </button>
-                        <button @click="imprimirCaratula" class="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Imprimir esta discrepancia">
+                        <button @click="imprimirDiscrepancia(d)" :disabled="generandoPdf" class="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50" title="Imprimir formato AG-145-12 de esta discrepancia">
                           <Printer class="w-3.5 h-3.5" />
                         </button>
                         <button @click="eliminarDiscrepancia(idx)" class="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors" title="Descartar discrepancia">
@@ -549,6 +742,18 @@ const getStatusColor = (estado: string) => {
                           <button @click="mostrarEdicionDiscrepancia = null" class="text-xs text-gray-500 hover:text-gray-700">Cerrar ✕</button>
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Tipo de discrepancia</label>
+                            <select v-model="d.tipoDiscrepancia" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400">
+                              <option :value="null">— Seleccionar —</option>
+                              <option value="OPERADOR">Reportada por el operador</option>
+                              <option value="SERVICIO">Generada en servicio</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">H.H. Estimadas</label>
+                            <input v-model.number="d.hhEstimadas" type="number" min="0" step="0.5" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400" />
+                          </div>
                           <div>
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Aeronavegable</label>
                             <select v-model="d.aeronavegable" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400">
@@ -604,9 +809,10 @@ const getStatusColor = (estado: string) => {
       <div class="px-6 py-3 bg-gray-100 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
         <button
           @click="imprimirCaratula"
-          class="flex items-center gap-1.5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors"
+          :disabled="generandoPdf"
+          class="flex items-center gap-1.5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
         >
-          <Printer class="w-3.5 h-3.5" /> Imprimir Carátula OT
+          <Printer class="w-3.5 h-3.5" /> {{ generandoPdf ? 'Generando...' : 'Imprimir Carátula OT' }}
         </button>
         <div v-if="esEdicion" class="flex gap-3">
           <button

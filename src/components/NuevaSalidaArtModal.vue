@@ -28,6 +28,7 @@ export interface PayloadNuevaSalidaArt {
   noSalida: string
   destinatario: string
   direccionDestinatario: string
+  referencia: string
   encargadoAlmacen: string
   traslada: string
   recibe: string
@@ -59,6 +60,7 @@ const form = reactive({
   noSalida: '',
   destinatario: '',
   direccionDestinatario: '',
+  referencia: '',
   encargadoAlmacen: '',
   traslada: '',
   recibe: ''
@@ -76,6 +78,7 @@ const resetAll = () => {
   form.noSalida = ''
   form.destinatario = ''
   form.direccionDestinatario = ''
+  form.referencia = ''
   form.encargadoAlmacen = ''
   form.traslada = ''
   form.recibe = ''
@@ -267,6 +270,7 @@ const generarSalida = async () => {
       noSalida: form.noSalida.trim(),
       destinatario: form.destinatario.trim(),
       direccionDestinatario: form.direccionDestinatario.trim(),
+      referencia: form.referencia.trim(),
       encargadoAlmacen: form.encargadoAlmacen.trim(),
       traslada: form.traslada.trim(),
       recibe: form.recibe.trim(),
@@ -337,6 +341,11 @@ const generarSalida = async () => {
               <div>
                 <label class="block text-sm font-medium text-slate-800 mb-2">Dirección *</label>
                 <input v-model="form.direccionDestinatario" type="text" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm" />
+              </div>
+
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-800 mb-2">Referencia</label>
+                <input v-model="form.referencia" type="text" placeholder="Ej. OT AG/OT/26-008, requisición, etc." class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm" />
               </div>
 
               <div>

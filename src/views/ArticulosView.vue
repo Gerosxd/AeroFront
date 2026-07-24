@@ -245,6 +245,7 @@ const cargarSalidas = async () => {
       noSalida: s.noSalida,
       destinatario: s.destinatario,
       direccion: s.direccionDestinatario, // Importante: el back manda direccionDestinatario
+      referencia: s.referencia,
       articulos: s.totalArticulos || (s.detalles ? s.detalles.length : 0),
       estado: s.estado || 'Completado'
     }))
