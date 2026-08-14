@@ -22,8 +22,8 @@ const menuItems: MenuItem[] = [
   { name: 'Componente / Parte', icon: Wrench, path: '/app/articulos' },
   { name: 'Ingenieria', icon: Settings, path: '/app/ingenieria' },
   // MÓDULOS EN DESARROLLO CONFIGURADOS CON RUTA VIRTUAL
-  { name: 'Compras', icon: ShoppingCart, path: '/app/compras-virtual', enDesarrollo: true },
-  { name: 'Requisiciones', icon: ClipboardCheck, path: '/app/requisiciones-virtual', enDesarrollo: true },
+  { name: 'Compras', icon: ShoppingCart, path: '/app/compras' },
+  { name: 'Requisiciones', icon: ClipboardCheck, path: '/app/requisiciones' },
 ];
 
 const route = useRoute();

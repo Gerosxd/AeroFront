@@ -8,7 +8,8 @@ const AlmacenView = () => import('../views/AlmacenView.vue')
 const ProveedoresView = () => import('../views/ProveedoresView.vue')
 const ArticulosView = () => import('../views/ArticulosView.vue')
 const IngenieriaView = () => import('../views/IngenieriaView.vue')
-
+const ComprasView = () => import('../views/ComprasView.vue')
+const RequisicionesView = () => import('../views/RequisicionesView.vue')
 const routes = [
   {
     path: '/',
@@ -26,6 +27,8 @@ const routes = [
       { path: 'proveedores', name: 'Proveedores', component: ProveedoresView },
       { path: 'articulos', name: 'Articulos', component: ArticulosView },
       { path: 'ingenieria', name: 'Ingenieria', component: IngenieriaView },
+      { path: 'compras', name: 'Compras', component: ComprasView },
+      { path: 'requisiciones', name: 'Requisiciones', component: RequisicionesView },
     ]
   }
 ]
