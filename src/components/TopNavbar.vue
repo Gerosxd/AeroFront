@@ -71,6 +71,7 @@ const rolTexto = computed(() => {
     case 3: return 'Ingeniero';
     case 4: return 'Almacén';
     case 5: return 'Director de ingeniería';
+    case 6: return 'Dirección';
     default: return 'Usuario';
   }
 });
