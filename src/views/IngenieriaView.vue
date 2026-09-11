@@ -436,7 +436,7 @@ const tabs = [
   { id: "clientes", label: "Clientes" },
   { id: "modelos", label: "Modelos" },
   { id: "aeronaves", label: "Aeronaves" },
-  { id: "reportes", label: "Reportes Programados" },
+  { id: "reportes", label: "Tareas Programados" },
 ];
 </script>
 
