@@ -321,26 +321,15 @@ const abrirDetalleOT = async (idOT: number, editarDirecto: boolean = false) => {
 };
 
 // 2. NUEVA FUNCIÓN: Guardar actualización de la OT completa hacia el Backend
-const handleActualizarOT = async (otActualizada: OTDetalle) => {
+const handleActualizarOT = async (_otActualizada: OTDetalle) => {
+  // FIX 14.7: el modal ya persistió y recargó la OT por sí mismo.
+  // Aquí solo refrescamos el listado y NO cerramos el modal, para que el
+  // usuario conserve su contexto y pueda imprimir con los IDs reales.
   try {
     cargandoDetalle.value = true;
-
-    // Invocamos el servicio apuntando al backend (ej: otService.actualizar)
-    // NOTA: Si no tienes el metodo creado, impleméntalo en tu ot.service.ts usando axios. put(`/ot/${otActualizada.idOT}`, otActualizada)
-    if (otService.actualizar) {
-      await otService.actualizar(otActualizada.idOT, otActualizada);
-    } else {
-      console.warn("Falta implementar otService.actualizar en el archivo de servicios. Simulando guardado exitoso.");
-    }
-
-    alert("La Orden de Trabajo se ha actualizado con éxito en producción.");
-
-    // Recargar flujos visuales
     await cargarOTs();
-    mostrarModalDetalleOT.value = false;
   } catch (error: any) {
-    console.error("Error al actualizar la OT:", error);
-    alert(error.response?.data || "Error de red al intentar guardar los cambios de la OT.");
+    console.error("Error al refrescar el listado de OTs:", error);
   } finally {
     cargandoDetalle.value = false;
   }

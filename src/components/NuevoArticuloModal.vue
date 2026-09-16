@@ -4,7 +4,9 @@ import { X, Plus, Trash2, Save } from 'lucide-vue-next'
 import type { CatalogoItem, Catalogos } from '../services/catalogo.service'
 import type { PayloadNuevoArticuloBackend } from '../services/articulo.service'
 
-type CondicionTexto = 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
+// D: la condición ahora es abierta — el catálogo incluye los códigos
+// aeronáuticos NE/NS/FN/OH/SV/INS/AR/CR/US además de los nombres previos.
+type CondicionTexto = string
 
 interface ArticuloPreview {
   noParte: string
@@ -58,16 +60,9 @@ const buscarNombre = (lista: CatalogoItem[], id: number) => {
 }
 
 const condicionTexto = (id: number): CondicionTexto | '-' => {
+  // D: mostrar cualquier condición del catálogo tal cual (antes solo 4 fijas)
   const nombre = buscarNombre(props.catalogos.condiciones, id)
-  if (
-    nombre === 'Nuevo' ||
-    nombre === 'Reparado' ||
-    nombre === 'Overhaul' ||
-    nombre === 'Reacondicionado'
-  ) {
-    return nombre
-  }
-  return '-'
+  return nombre && nombre.trim() !== '' ? nombre : '-'
 }
 
 const resetForm = () => {

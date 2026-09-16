@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import otService from '../services/ot.service'
+import { hhmmADecimal } from '../utils/timeFormat'
 
 // Importaciones de servicios y tipos relacionales estructurados
 import { programadaService } from '../services/programada.service'
@@ -21,6 +22,18 @@ const success = ref('')
 
 const matriculas = ref<AeronaveCombo[]>([])
 const noOT = ref('')
+
+// Punto 3: horas totales de la OT en HH:MM -> decimal para el backend
+const horasTotalesHHMM = ref('')
+const horasTotalesInvalidas = ref(false)
+const onHorasTotalesInput = (texto: string) => {
+  horasTotalesHHMM.value = texto
+  if (!texto.trim()) { form.horasTotales = null; horasTotalesInvalidas.value = false; return }
+  const dec = hhmmADecimal(texto)
+  if (dec === null) { horasTotalesInvalidas.value = true; return }
+  horasTotalesInvalidas.value = false
+  form.horasTotales = dec
+}
 
 const mostrarFormularioTarea = ref(false)
 const mostrarFormularioDiscrepancia = ref(false)
@@ -62,6 +75,8 @@ const form = reactive<CrearOTRequest>({
   // P-00: Carátula AG-145-03
   tipoMantenimiento: null,
   modalidadMantenimiento: null,
+  tipoAeronave: null,        // B3
+  tipoAeronaveOtro: null,    // B3
   comentarioTaller: null,
   componenteDescripcion: null,
   componenteNumeroParte: null,
@@ -175,6 +190,8 @@ function resetFormularioPrincipal() {
   form.fechaCierre = null
 
   form.horasTotales = null
+  horasTotalesHHMM.value = ''
+  horasTotalesInvalidas.value = false
   form.ciclosTotales = null
 
   form.tiempoMotor1 = null
@@ -193,6 +210,8 @@ function resetFormularioPrincipal() {
 
   form.tipoMantenimiento = null
   form.modalidadMantenimiento = null
+  form.tipoAeronave = null
+  form.tipoAeronaveOtro = null
   form.comentarioTaller = null
   form.componenteDescripcion = null
   form.componenteNumeroParte = null
@@ -292,6 +311,7 @@ async function crearOT() {
 
     // SOLUCIÓN: Cambiar 'idCliente: null' por 'form.idCliente' para que se guarde en MySQL
     const payload: CrearOTRequest = {
+      noOT: noOT.value?.trim() || '', // B2: folio manual; vacío = el backend autogenera
       idAeronave: form.idAeronave,
       idCliente: form.idCliente,
 
@@ -318,6 +338,8 @@ async function crearOT() {
 
       tipoMantenimiento: form.tipoMantenimiento,
       modalidadMantenimiento: form.modalidadMantenimiento,
+      tipoAeronave: form.tipoAeronave,
+      tipoAeronaveOtro: form.tipoAeronave === 'OTRO' ? form.tipoAeronaveOtro : null,
       comentarioTaller: form.comentarioTaller,
       componenteDescripcion: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteDescripcion : null,
       componenteNumeroParte: form.tipoMantenimiento === 'COMPONENTE' ? form.componenteNumeroParte : null,
@@ -407,7 +429,10 @@ onMounted(async () => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">No. OT</label>
-              <input :value="noOT" type="text" disabled class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600" />
+              <!-- B2 (comentario 7): editable. El backend respeta el valor manual;
+                   si se deja el sugerido, usa el consecutivo autogenerado. -->
+              <input v-model="noOT" type="text" placeholder="Ej. AG/OT/26-031" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" />
+              <p class="text-xs text-gray-400 mt-1">Sugerido automáticamente. Puedes editarlo si la OT real usa otro folio.</p>
             </div>
 
             <div>
@@ -439,8 +464,9 @@ onMounted(async () => {
               <input v-model="form.fechaCierre" type="date" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Horas totales</label>
-              <input v-model.number="form.horasTotales" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm" />
+              <label class="block text-sm font-medium text-gray-700 mb-1">Horas totales (HH:MM)</label>
+              <input :value="horasTotalesHHMM" @input="onHorasTotalesInput(($event.target as HTMLInputElement).value)" type="text" inputmode="numeric" placeholder="Ej. 9756:40" :class="['w-full rounded-lg border bg-white px-3 py-2 text-sm', horasTotalesInvalidas ? 'border-red-400' : 'border-gray-300']" />
+              <p v-if="horasTotalesInvalidas" class="text-xs text-red-500 mt-1">Formato inválido. Usa horas:minutos, ej. 1250:30</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Ciclos totales</label>
@@ -468,6 +494,20 @@ onMounted(async () => {
                 <option value="PROGRAMADO">Mantenimiento Programado</option>
                 <option value="NO_PROGRAMADO">Mantenimiento No Programado</option>
               </select>
+            </div>
+            <!-- B3 (comentarios 9 y 12): tipo de aeronave para la carátula -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de aeronave</label>
+              <select v-model="form.tipoAeronave" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none">
+                <option :value="null">Seleccionar tipo</option>
+                <option value="ALA_FIJA">Ala Fija</option>
+                <option value="ALA_ROTATIVA">Ala Rotativa</option>
+                <option value="OTRO">Otro</option>
+              </select>
+            </div>
+            <div v-if="form.tipoAeronave === 'OTRO'">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Especificar (Otro)</label>
+              <input v-model="form.tipoAeronaveOtro" type="text" placeholder="Ej. Planeador, Dron" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none" />
             </div>
           </div>
 
@@ -550,6 +590,11 @@ onMounted(async () => {
           <div class="pt-2">
             <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios adicionales solicitados por el cliente</label>
             <textarea v-model="form.comentarioCliente" rows="4" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm resize-none outline-none" />
+          </div>
+          <div class="pt-2">
+            <!-- B4 (comentario 10): comentarios del responsable de taller para la carátula AG-145-03 -->
+            <label class="block text-sm font-medium text-gray-700 mb-1">Comentarios del Responsable de Taller</label>
+            <textarea v-model="form.comentarioTaller" rows="4" placeholder="Observaciones del taller sobre la orden de trabajo" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm resize-none outline-none" />
           </div>
         </section>
 

@@ -45,7 +45,7 @@ interface ArticuloTabla {
   proveedor: string
   precio: number
   moneda: String
-  condicion: 'Nuevo' | 'Reparado' | 'Overhaul' | 'Reacondicionado'
+  condicion: string // D: catálogo abierto (incluye NE/NS/FN/OH/SV/INS/AR/CR/US)
 }
 
 interface Entrada {
@@ -124,6 +124,7 @@ const formatCurrency = (value: number) =>
 
 const getConditionStyle = (condicion: string) => {
   switch (condicion) {
+    // Condiciones previas
     case 'Nuevo':
       return 'bg-green-100 text-green-700'
     case 'Reparado':
@@ -132,6 +133,21 @@ const getConditionStyle = (condicion: string) => {
       return 'bg-purple-100 text-purple-700'
     case 'Reacondicionado':
       return 'bg-indigo-100 text-indigo-700'
+    // D: códigos aeronáuticos nuevos (solicitud de Dirección)
+    case 'NE':   // Nuevo
+    case 'NS':   // Nuevo excedente
+    case 'FN':   // Nuevo de fábrica
+      return 'bg-green-100 text-green-700'
+    case 'OH':   // Overhaul
+      return 'bg-purple-100 text-purple-700'
+    case 'SV':   // Servible
+    case 'INS':  // Inspeccionado
+      return 'bg-blue-100 text-blue-700'
+    case 'AR':   // As removed
+    case 'CR':   // Core
+      return 'bg-amber-100 text-amber-700'
+    case 'US':   // Usado / no servible
+      return 'bg-red-100 text-red-700'
     default:
       return 'bg-gray-100 text-gray-700'
   }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import otService from '../services/ot.service';
-import { X, Calendar, Wrench, ShieldAlert, ClipboardList, Edit3, Check, RotateCcw, PlusCircle, Search, Printer, Pencil, Trash2 } from 'lucide-vue-next';
+import { decimalAHHMM, hhmmADecimal, calcularHH } from '../utils/timeFormat';
+import { X, Calendar, Wrench, ShieldAlert, ClipboardList, Edit3, Check, RotateCcw, PlusCircle, Search, Printer, Pencil, Trash2, Save } from 'lucide-vue-next';
 import type { OTDetalle, TareaMantenimientoResponse, DiscrepanciaResponse } from '../types/ot';
 import type { TareaProgramada } from '../types/programada';
 
@@ -20,6 +21,40 @@ const emit = defineEmits(['close', 'guardarOT']);
 const esEdicion = ref(false);
 const otEditable = ref<OTDetalle | null>(null);
 const desplegarListaReportes = ref<number | null>(null);
+
+// --- FIX guardado (13.3/14.7): detección de cambios sin depender de "Editar OT" ---
+const snapshotOriginal = ref<string>('');
+const hayCambiosPendientes = computed(() => {
+  if (!otEditable.value) return false;
+  return JSON.stringify(otEditable.value) !== snapshotOriginal.value;
+});
+const mostrarGuardado = computed(() => esEdicion.value || hayCambiosPendientes.value);
+const guardando = ref(false);
+
+// --- Puntos 3 y 14.6: horas en HH:MM y H.H. derivada ---
+const horasEnEdicion = ref<Record<string, string>>({});
+const horasInvalidas = ref<Record<string, boolean>>({});
+const keyTarea = (t: TareaMantenimientoResponse) => String(t.idTareaOT || t.codigo);
+const horasHHMM = (t: TareaMantenimientoResponse): string => {
+  const k = keyTarea(t);
+  const enEdicion = horasEnEdicion.value[k];
+  if (enEdicion !== undefined) return enEdicion;
+  return decimalAHHMM(t.horasTotales);
+};
+const setHorasHHMM = (t: TareaMantenimientoResponse, texto: string) => {
+  const k = keyTarea(t);
+  horasEnEdicion.value[k] = texto;
+  if (!texto.trim()) { (t as any).horasTotales = null; horasInvalidas.value[k] = false; return; }
+  const dec = hhmmADecimal(texto);
+  if (dec === null) { horasInvalidas.value[k] = true; return; }
+  horasInvalidas.value[k] = false;
+  t.horasTotales = dec;
+};
+const hhCalculado = (t: TareaMantenimientoResponse): string | null => {
+  const tec = parseInt(String(t.tecnicos ?? ''), 10);
+  const hh = calcularHH(isNaN(tec) ? null : tec, t.horasTotales);
+  return hh === null ? null : hh.toFixed(2);
+};
 
 // --- T-03: POPUP AGREGAR TAREAS DESDE REPORTES ---
 const mostrarPopupAgregarTarea = ref(false);
@@ -56,6 +91,7 @@ const agregarTareaDesdeReporte = (reporte: TareaProgramada) => {
   });
   mostrarPopupAgregarTarea.value = false;
   filtroPopupReportes.value = '';
+  abrirEdicionTarea(otEditable.value.tareasMantenimiento.length - 1);
 };
 
 // --- T-04: FORMULARIO AGREGAR DISCREPANCIAS ---
@@ -87,6 +123,7 @@ const agregarDiscrepancia = () => {
   });
   discrepanciaForm.value = { codigo: '', descripcion: '', estatus: 'Abierta', acciones: '' };
   mostrarFormDiscrepancia.value = false;
+  abrirEdicionDiscrepancia(otEditable.value.discrepancias.length - 1);
 };
 
 // --- T-05: BUSCADORES ---
@@ -134,6 +171,7 @@ const abrirPdf = async (fn: () => Promise<Blob>, errorMsg: string) => {
 // P-02: Carátula de la OT (AG-145-03)
 const imprimirCaratula = async () => {
   if (!otEditable.value?.idOT) return;
+  if (!(await asegurarGuardado())) return;
   const id = otEditable.value.idOT;
   await abrirPdf(
     () => otService.obtenerCaratulaPdf(id),
@@ -142,12 +180,13 @@ const imprimirCaratula = async () => {
 };
 
 // P-03: Hoja de Servicio de una tarea (AG-145-04)
-const imprimirHojaServicio = async (tarea: TareaMantenimientoResponse) => {
+const imprimirHojaServicio = async (tareaRef: TareaMantenimientoResponse) => {
   if (!otEditable.value?.idOT) return;
-  if (!tarea.idTareaOT) {
-    alert('Guarda los cambios de la OT antes de imprimir la Hoja de Servicio de esta tarea.');
-    return;
-  }
+  const idx = otEditable.value.tareasMantenimiento.indexOf(tareaRef);
+  if (idx < 0) return;
+  if (!(await asegurarGuardado())) return;
+  const tarea = otEditable.value.tareasMantenimiento[idx];
+  if (!tarea?.idTareaOT) { alert('No se pudo identificar la tarea. Intenta de nuevo.'); return; }
   const id = otEditable.value.idOT;
   await abrirPdf(
     () => otService.obtenerHojaServicioPdf(id, tarea.idTareaOT),
@@ -158,6 +197,7 @@ const imprimirHojaServicio = async (tarea: TareaMantenimientoResponse) => {
 // P-03: Hojas de Servicio de todas las tareas
 const imprimirTodasHojasServicio = async () => {
   if (!otEditable.value?.idOT) return;
+  if (!(await asegurarGuardado())) return;
   const id = otEditable.value.idOT;
   await abrirPdf(
     () => otService.obtenerHojasServicioPdf(id),
@@ -166,15 +206,15 @@ const imprimirTodasHojasServicio = async () => {
 };
 
 // P-04: Formato de una discrepancia (AG-145-12)
-const imprimirDiscrepancia = async (discrepancia: DiscrepanciaResponse) => {
+const imprimirDiscrepancia = async (dRef: DiscrepanciaResponse) => {
   if (!otEditable.value?.idOT) return;
-  if (!discrepancia.idOTDiscrepancia) {
-    alert('Guarda los cambios de la OT antes de imprimir esta discrepancia.');
-    return;
-  }
-  const id = otEditable.value.idOT;
+  const idx = otEditable.value.discrepancias.indexOf(dRef);
+  if (idx < 0) return;
+  if (!(await asegurarGuardado())) return;
+  const d = otEditable.value.discrepancias[idx];
+  if (!d?.idOTDiscrepancia) { alert('No se pudo identificar la discrepancia. Intenta de nuevo.'); return; }
   await abrirPdf(
-    () => otService.obtenerDiscrepanciaPdf(id, discrepancia.idOTDiscrepancia),
+    () => otService.obtenerDiscrepanciaPdf(id, d.idOTDiscrepancia),
     'No se pudo generar el formato de la discrepancia.'
   );
 };
@@ -182,6 +222,7 @@ const imprimirDiscrepancia = async (discrepancia: DiscrepanciaResponse) => {
 // P-04: Formato con todas las discrepancias
 const imprimirTodasDiscrepancias = async () => {
   if (!otEditable.value?.idOT) return;
+  if (!(await asegurarGuardado())) return;
   const id = otEditable.value.idOT;
   await abrirPdf(
     () => otService.obtenerDiscrepanciasPdf(id),
@@ -246,15 +287,27 @@ watch(
     () => [props.open, props.ot, props.cargando],
     ([isOpen, currentOt, isCargando]) => {
       if (isOpen && currentOt && !isCargando) {
-        otEditable.value = JSON.parse(JSON.stringify(currentOt));
-        otEditable.value.tareasMantenimiento = otEditable.value.tareasMantenimiento || [];
-        otEditable.value.discrepancias = otEditable.value.discrepancias || [];
+        // No pisar edición en curso con cambios sin guardar de la misma OT
+        if (
+          otEditable.value &&
+          hayCambiosPendientes.value &&
+          (currentOt as OTDetalle).idOT === otEditable.value.idOT
+        ) {
+          return;
+        }
+        const nueva = JSON.parse(JSON.stringify(currentOt)) as OTDetalle;
+        nueva.tareasMantenimiento = nueva.tareasMantenimiento || [];
+        nueva.discrepancias = nueva.discrepancias || [];
+        otEditable.value = nueva;
         esEdicion.value = !!props.forzarEdicion;
+        snapshotOriginal.value = JSON.stringify(otEditable.value);
         // Reset estados locales
         busquedaTareas.value = '';
         busquedaDiscrepancias.value = '';
         mostrarEdicionTarea.value = null;
         mostrarEdicionDiscrepancia.value = null;
+        horasEnEdicion.value = {};
+        horasInvalidas.value = {};
       }
     },
     { immediate: true, deep: true }
@@ -264,26 +317,58 @@ const activarEdicion = () => {
   esEdicion.value = true;
 };
 
+const cerrarModal = () => {
+  if (hayCambiosPendientes.value && !confirm('Tienes cambios sin guardar. ¿Cerrar y descartarlos?')) return;
+  emit('close');
+};
+
 const cancelarEdicion = () => {
   if (props.ot) {
-    otEditable.value = JSON.parse(JSON.stringify(props.ot));
+    const restaurada = JSON.parse(JSON.stringify(props.ot)) as OTDetalle;
+    restaurada.tareasMantenimiento = restaurada.tareasMantenimiento || [];
+    restaurada.discrepancias = restaurada.discrepancias || [];
+    otEditable.value = restaurada;
+    snapshotOriginal.value = JSON.stringify(otEditable.value);
   }
   esEdicion.value = false;
   desplegarListaReportes.value = null;
   mostrarEdicionTarea.value = null;
   mostrarEdicionDiscrepancia.value = null;
+  horasEnEdicion.value = {};
+  horasInvalidas.value = {};
 };
 
-const seleccionarReporteParaTarea = (indexTarea: number, reporte: TareaProgramada) => {
-  if (!otEditable.value?.tareasMantenimiento[indexTarea]) return;
-  otEditable.value.tareasMantenimiento[indexTarea].codigo = reporte.codigo;
-  otEditable.value.tareasMantenimiento[indexTarea].descripcion = reporte.descripcion;
-  desplegarListaReportes.value = null;
+
+const enviarGuardado = async (): Promise<boolean> => {
+  if (!otEditable.value?.idOT) return false;
+  try {
+    guardando.value = true;
+    await otService.actualizar(otEditable.value.idOT, otEditable.value);
+    // Recargar SIN cerrar el modal, para obtener idTareaOT / idOTDiscrepancia reales
+    const recargada = await otService.obtenerPorId(otEditable.value.idOT);
+    const clon = JSON.parse(JSON.stringify(recargada)) as OTDetalle;
+    clon.tareasMantenimiento = clon.tareasMantenimiento || [];
+    clon.discrepancias = clon.discrepancias || [];
+    otEditable.value = clon;
+    snapshotOriginal.value = JSON.stringify(otEditable.value);
+    horasEnEdicion.value = {};
+    horasInvalidas.value = {};
+    esEdicion.value = false;
+    emit('guardarOT', otEditable.value);
+    return true;
+  } catch (e: any) {
+    console.error('Error al guardar la OT:', e);
+    alert(e?.response?.data || 'No se pudieron guardar los cambios de la OT.');
+    return false;
+  } finally {
+    guardando.value = false;
+  }
 };
 
-const enviarGuardado = () => {
-  emit('guardarOT', otEditable.value);
-  esEdicion.value = false;
+/** Antes de imprimir: si hay cambios pendientes, guarda primero. */
+const asegurarGuardado = async (): Promise<boolean> => {
+  if (!hayCambiosPendientes.value) return true;
+  return await enviarGuardado();
 };
 
 const getStatusColor = (estado: string) => {
@@ -313,7 +398,7 @@ const getStatusColor = (estado: string) => {
           >
             <Edit3 class="w-3.5 h-3.5" /> Editar OT
           </button>
-          <button @click="emit('close')" class="p-1 text-gray-400 hover:text-white rounded-md transition-colors">
+          <button @click="cerrarModal" class="p-1 text-gray-400 hover:text-white rounded-md transition-colors">
             <X class="w-4 h-4" />
           </button>
         </div>
@@ -442,6 +527,20 @@ const getStatusColor = (estado: string) => {
                   <option value="NO_PROGRAMADO">Mantenimiento No Programado</option>
                 </select>
               </div>
+              <!-- B3: tipo de aeronave para los checkboxes de la carátula -->
+              <div>
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Tipo de aeronave</label>
+                <select v-model="otEditable.tipoAeronave" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400">
+                  <option :value="null">— Sin definir —</option>
+                  <option value="ALA_FIJA">Ala Fija</option>
+                  <option value="ALA_ROTATIVA">Ala Rotativa</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+              <div v-if="otEditable.tipoAeronave === 'OTRO'">
+                <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Especificar (Otro)</label>
+                <input v-model="otEditable.tipoAeronaveOtro" type="text" placeholder="Ej. Planeador, Dron" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+              </div>
               <div class="sm:col-span-2">
                 <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Comentarios del Responsable de Taller</label>
                 <textarea v-model="otEditable.comentarioTaller" rows="2" class="w-full bg-gray-50 border border-gray-300 rounded-md px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-blue-400 resize-none"></textarea>
@@ -545,10 +644,13 @@ const getStatusColor = (estado: string) => {
                     <td class="p-2 font-mono text-gray-900">{{ t.codigo }}</td>
                     <td class="p-2 text-gray-600">{{ t.descripcion }}</td>
                     <td class="p-2 text-gray-500">{{ t.tecnicos || 'No asignado' }}</td>
-                    <td class="p-2 text-gray-900 font-semibold text-right">{{ t.horasTotales || '0' }} hrs</td>
+                    <td class="p-2 text-gray-900 font-semibold text-right">{{ decimalAHHMM(t.horasTotales) || '0:00' }}</td>
                     <!-- T-07: Botones de acción -->
                     <td class="p-2 text-center">
                       <div class="flex items-center justify-center gap-1.5">
+                        <button v-if="hayCambiosPendientes" @click="enviarGuardado" :disabled="guardando" class="p-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors disabled:opacity-50" title="Guardar cambios">
+                          <Save class="w-3.5 h-3.5" />
+                        </button>
                         <button @click="abrirEdicionTarea(idx)" class="p-1 rounded hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" title="Editar datos complementarios">
                           <Pencil class="w-3.5 h-3.5" />
                         </button>
@@ -591,11 +693,15 @@ const getStatusColor = (estado: string) => {
                           </div>
                           <div>
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Técnicos (cantidad)</label>
-                            <input v-model.number="t.tecnicos" type="number" min="0" step="1" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                            <input v-model="t.tecnicos" type="number" min="0" step="1" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
                           </div>
                           <div>
-                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Horas totales (HH:MM)</label>
-                            <input v-model="t.horasTotales" type="time" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Horas por técnico (HH:MM)</label>
+                            <input :value="horasHHMM(t)" @input="setHorasHHMM(t, ($event.target as HTMLInputElement).value)" type="text" inputmode="numeric" placeholder="Ej. 6:30" :class="['w-full bg-white border rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400', horasInvalidas[keyTarea(t)] ? 'border-red-400' : 'border-gray-300']" />
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">H.H. (téc × horas)</label>
+                            <div class="w-full bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-xs font-semibold text-gray-700">{{ hhCalculado(t) ?? '—' }}</div>
                           </div>
                           <div class="sm:col-span-2">
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Parte / componente / material asociado</label>
@@ -721,6 +827,9 @@ const getStatusColor = (estado: string) => {
                     <!-- T-07: Botones de acción -->
                     <td class="p-2 text-center">
                       <div class="flex items-center justify-center gap-1.5">
+                        <button v-if="hayCambiosPendientes" @click="enviarGuardado" :disabled="guardando" class="p-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors disabled:opacity-50" title="Guardar cambios">
+                          <Save class="w-3.5 h-3.5" />
+                        </button>
                         <button @click="abrirEdicionDiscrepancia(idx)" class="p-1 rounded hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors" title="Editar datos complementarios">
                           <Pencil class="w-3.5 h-3.5" />
                         </button>
@@ -754,13 +863,7 @@ const getStatusColor = (estado: string) => {
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">H.H. Estimadas</label>
                             <input v-model.number="d.hhEstimadas" type="number" min="0" step="0.5" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400" />
                           </div>
-                          <div>
-                            <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Aeronavegable</label>
-                            <select v-model="d.aeronavegable" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400">
-                              <option value="SI">SI</option>
-                              <option value="NO">NO</option>
-                            </select>
-                          </div>
+                          <!-- 13.5: 'Aeronavegable' retirado; el formato AG-145-12 vigente ya no lo incluye. -->
                           <div>
                             <label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Fecha autorizada</label>
                             <input v-model="d.fechaAutorizada" type="date" class="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400" />
@@ -814,7 +917,10 @@ const getStatusColor = (estado: string) => {
         >
           <Printer class="w-3.5 h-3.5" /> {{ generandoPdf ? 'Generando...' : 'Imprimir Carátula OT' }}
         </button>
-        <div v-if="esEdicion" class="flex gap-3">
+        <div v-if="mostrarGuardado" class="flex items-center gap-3">
+          <span v-if="hayCambiosPendientes" class="text-xs font-semibold text-amber-600 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Cambios sin guardar
+          </span>
           <button
               @click="cancelarEdicion"
               class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
@@ -823,9 +929,10 @@ const getStatusColor = (estado: string) => {
           </button>
           <button
               @click="enviarGuardado"
-              class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
+              :disabled="guardando"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-sm disabled:opacity-60"
           >
-            <Check class="w-3.5 h-3.5" /> Guardar Cambios
+            <Check class="w-3.5 h-3.5" /> {{ guardando ? 'Guardando...' : 'Guardar Cambios' }}
           </button>
         </div>
       </div>

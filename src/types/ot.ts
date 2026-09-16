@@ -23,6 +23,7 @@ export interface DiscrepanciaOTRequest {
 }
 
 export interface CrearOTRequest {
+    noOT?: string          // B2: folio manual opcional; vacío => backend autogenera
     idAeronave: number | null
     idCliente: number | null
 
@@ -50,6 +51,8 @@ export interface CrearOTRequest {
     // P-00: Carátula AG-145-03
     tipoMantenimiento: string | null
     modalidadMantenimiento: string | null
+    tipoAeronave: string | null          // B3: ALA_FIJA / ALA_ROTATIVA / OTRO
+    tipoAeronaveOtro: string | null      // B3: texto libre cuando es OTRO
     comentarioTaller: string | null
     componenteDescripcion: string | null
     componenteNumeroParte: string | null
@@ -132,6 +135,8 @@ export interface OTDetalle {
     // Campos P-00 plantilla AG-145-03 (carátula)
     tipoMantenimiento: string | null;
     modalidadMantenimiento: string | null;
+    tipoAeronave: string | null;          // B3: ALA_FIJA / ALA_ROTATIVA / OTRO
+    tipoAeronaveOtro: string | null;      // B3: texto libre cuando es OTRO
     comentarioTaller: string | null;
     componenteDescripcion: string | null;
     componenteNumeroParte: string | null;

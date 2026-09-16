@@ -16,11 +16,23 @@ const form = reactive<PayloadClienteBackend>({
   compania: '',
   rfc: '',
   direccion: '',
+  ciudad: '',       // B1
+  estadoRep: '',    // B1
   contacto: '',
   telefono: '',
   correo: '',
   estado: 'Activo' // Por defecto lo creamos activo
 });
+
+// B1: Estados de la República Mexicana para el selector
+const estadosMexico = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche',
+  'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima',
+  'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo',
+  'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca',
+  'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa',
+  'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+];
 
 onMounted(() => {
   if (props.clienteAEditar) {
@@ -69,8 +81,25 @@ const handleSubmit = () => {
             <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Dirección Completa</label>
             <div class="relative">
               <MapPin class="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-              <textarea v-model="form.direccion" required rows="2" placeholder="Calle, Número, Colonia, Ciudad, C.P." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+              <textarea v-model="form.direccion" required rows="2" placeholder="Calle, Número, Colonia, C.P." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
             </div>
+          </div>
+
+          <!-- B1: Ciudad y Estado en columnas independientes (comentario 5) -->
+          <div class="col-span-2 md:col-span-1">
+            <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Ciudad</label>
+            <div class="relative">
+              <MapPin class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input v-model="form.ciudad" type="text" placeholder="Ciudad" class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+          </div>
+
+          <div class="col-span-2 md:col-span-1">
+            <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Estado</label>
+            <select v-model="form.estadoRep" class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+              <option value="">Seleccionar estado</option>
+              <option v-for="est in estadosMexico" :key="est" :value="est">{{ est }}</option>
+            </select>
           </div>
         </div>
 
@@ -85,10 +114,13 @@ const handleSubmit = () => {
           </div>
 
           <div class="col-span-2 md:col-span-1">
-            <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">Correo</label>
+            <label class="text-xs font-bold text-gray-700 uppercase mb-1 block">
+              Correo <span class="text-gray-400 font-normal normal-case">(opcional)</span>
+            </label>
             <div class="relative">
               <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input v-model="form.correo" type="email" required placeholder="correo@empresa.com" class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+              <!-- B1: type="text" en vez de "email" para permitir vacío o "ukn" sin bloqueo del navegador (comentario 1) -->
+              <input v-model="form.correo" type="text" placeholder="correo@empresa.com (opcional)" class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
 

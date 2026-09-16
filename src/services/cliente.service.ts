@@ -5,11 +5,13 @@ export interface PayloadClienteBackend {
   compania: string;   // Nombre (dependencia o empresa)
   rfc: string;
   direccion: string;  // Dirección completa
+  ciudad?: string | null;    // B1: Ciudad (comentario 5 del reporte)
+  estadoRep?: string | null; // B1: Estado de la República (columna EstadoRep en BD)
   contacto: string;   // Nombre del contacto
   telefono: string;
-  correo: string;
+  correo?: string | null;    // B1: correo opcional (comentario 1: algunos clientes no lo dan)
   aeronaves?: number; // Para cumplir con el ticket (espacio pendiente)
-  estado?: string;    // Para cumplir con el ticket
+  estado?: string;    // Estatus Activo/Inactivo del cliente
 }
 
 export const guardarCliente = async (payload: PayloadClienteBackend) => {
